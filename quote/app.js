@@ -4,7 +4,7 @@
 (function () {
 'use strict';
 
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkGXvPRbazP-jnYXUlekKzc3CdPaWQo3C8hy-lQZPUPhuCjcPsqtJ91ZCc71OQXqJ3/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6j075sRufGpEy0IfVm2d_d70qb3Qpj5I5zcgwgMvRd_F6meKwvmrjrebWs4DkloE8tg/exec';
 var DEMO = /[?&]demo=1/.test(location.search);
 var BRAND = { name: 'The Unposed Story', owner: 'Sandip Lade', phone: '+91 70452 78377', wa: '917045278377',
   email: 'weddings.theunposedstory@gmail.com', insta: '@theunposedstory', web: 'theunposedstory.github.io/portfolio',
