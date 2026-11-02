@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quotation Builder · The Unposed Story</title>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#8B1230">
+<link rel="icon" href="../assets/img/favicon-48.png" sizes="48x48" type="image/png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login" class="login" hidden>
+  <div class="login-card">
+    <img src="../assets/img/logo.png" alt="The Unposed Story" class="login-logo">
+    <h1>Quotation Builder</h1>
+    <p class="muted">Private area for The Unposed Story team.</p>
+    <form id="loginForm" autocomplete="off">
+      <label for="pin">Enter your PIN</label>
+      <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" minlength="6" maxlength="10" required placeholder="••••••" autocomplete="current-password">
+      <button class="btn btn-gold" type="submit">Unlock</button>
+      <p id="loginMsg" class="msg" role="alert"></p>
+      <p class="hint">First time here? The 6–10 digit PIN you enter now becomes your PIN.</p>
+    </form>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-in">
+      <a class="top-brand" href="#dashboard"><img src="../assets/img/logo-header.png" alt="The Unposed Story"></a>
+      <nav class="tabs" aria-label="Sections">
+        <a href="#dashboard" data-tab="dashboard">Dashboard</a>
+        <a href="#new" data-tab="editor" class="tab-new">+ New quote</a>
+      </nav>
+      <div class="top-actions">
+        <a id="sheetLink" class="icon-btn" target="_blank" rel="noopener" title="Open Google Sheet">Sheet</a>
+        <button id="logout" class="icon-btn" title="Lock">Lock</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- DASHBOARD -->
+  <main id="dashboard" class="view">
+    <div class="wrap">
+      <div class="view-head">
+        <div><p class="eyebrow">Overview</p><h2>Quotations</h2></div>
+        <a href="#new" class="btn btn-dark">+ New quote</a>
+      </div>
+      <div class="kpis" id="kpis"></div>
+
+      <section class="panel" id="awaitingPanel">
+        <div class="panel-head"><h3>Enquiries waiting for a quote</h3><span class="muted" id="awaitCount"></span></div>
+        <div id="awaiting" class="await-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h3>All quotations</h3>
+          <div class="filters">
+            <input id="search" type="search" placeholder="Search client, quote no…" aria-label="Search quotations">
+            <div class="chips" id="statusChips"></div>
+          </div>
+        </div>
+        <div id="quoteList" class="qlist"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- EDITOR -->
+  <main id="editor" class="view" hidden>
+    <div class="wrap ed-grid">
+      <div class="ed-main">
+        <div class="view-head">
+          <div><p class="eyebrow" id="edStatusLine">New quotation</p><h2 id="edTitle">New quote</h2></div>
+          <select id="qStatus" class="status-select" aria-label="Quote status"></select>
+        </div>
+
+        <!-- 1 Client -->
+        <section class="card" id="sec-client">
+          <h3><span>1</span> Client</h3>
+          <label class="full">Start from an enquiry (optional)
+            <select id="enqPick"><option value="">Enter details manually</option></select>
+          </label>
+          <div class="grid2">
+            <label>Client / couple name *<input data-k="client.name" required placeholder="Priya & Rohan"></label>
+            <label>Partner<input data-k="client.partner" placeholder="Partner's name"></label>
+            <label>WhatsApp *<input data-k="client.phone" type="tel" inputmode="tel" placeholder="+91 98XXX XXXXX"></label>
+            <label>Email<input data-k="client.email" type="email" placeholder="client@email.com"></label>
+            <label>Main wedding date<input data-k="client.date" type="date"></label>
+            <label>City / venue<input data-k="client.venue" placeholder="Thane, The Lalit"></label>
+            <label>Guest count<input data-k="client.guests" placeholder="200–500"></label>
+            <label>Client budget (₹)<input data-k="budget" type="number" min="0" step="1000" inputmode="numeric" placeholder="e.g. 80000"></label>
+          </div>
+        </section>
+
+        <!-- 2 Events -->
+        <section class="card" id="sec-events">
+          <h3><span>2</span> Events &amp; schedule</h3>
+          <p class="muted small">Tick the events you're covering. Date, venue and timing appear on the quotation.</p>
+          <div id="events" class="events"></div>
+          <button type="button" class="btn-link" id="addEvent">+ Add another event</button>
+        </section>
+
+        <!-- 3 Package -->
+        <section class="card" id="sec-package">
+          <h3><span>3</span> Package &amp; pricing</h3>
+          <div id="pkgCards" class="pkg-cards"></div>
+          <div class="grid3">
+            <label>Coverage days (package × days)<input data-k="days" type="number" min="1" max="10" step="1"></label>
+            <label>Travel &amp; stay charged to client (₹)<input data-k="travel.charge" type="number" min="0" step="500"></label>
+            <label class="private">Travel &amp; stay cost to you (₹)<input data-k="travel.cost" type="number" min="0" step="500"></label>
+          </div>
+          <h4>Add-ons</h4>
+          <div id="addons" class="addons"></div>
+          <h4>Extra items</h4>
+          <div id="custom" class="custom"></div>
+          <button type="button" class="btn-link" id="addCustom">+ Add custom item</button>
+        </section>
+
+        <!-- 4 Team & deliverables -->
+        <section class="card" id="sec-scope">
+          <h3><span>4</span> Team &amp; deliverables</h3>
+          <p class="muted small">Pre-filled from the package. Adjust if this couple needs something different.</p>
+          <h4>Team deployment</h4>
+          <div class="grid3" id="team"></div>
+          <h4>Deliverables</h4>
+          <div id="deliv" class="deliv"></div>
+        </section>
+
+        <!-- 5 Discount & payments -->
+        <section class="card" id="sec-pay">
+          <h3><span>5</span> Discount &amp; payment plan</h3>
+          <div class="grid3">
+            <label>Discount
+              <span class="inline"><input data-k="discount.value" type="number" min="0" step="500" placeholder="0">
+              <select data-k="discount.type"><option value="amt">₹</option><option value="pct">%</option></select></span>
+            </label>
+            <label>Round final amount
+              <select data-k="round"><option value="500">to nearest ₹500</option><option value="1000">to nearest ₹1,000</option><option value="0">don't round</option></select>
+            </label>
+            <label>Payment plan
+              <select data-k="plan"><option value="30-50-20">30% / 50% / 20%</option><option value="50-50">50% / 50%</option></select>
+            </label>
+          </div>
+          <div id="planPreview" class="plan"></div>
+        </section>
+
+        <!-- 6 Terms -->
+        <section class="card" id="sec-terms">
+          <h3><span>6</span> Validity, notes &amp; terms</h3>
+          <div class="grid3">
+            <label>Quotation date<input data-k="quoteDate" type="date"></label>
+            <label>Valid for (days)<input data-k="validDays" type="number" min="1" max="90"></label>
+            <label>Valid until<input id="validUntil" disabled></label>
+          </div>
+          <label class="full">Note for the client (shown on quotation)<textarea data-k="notes" rows="3" placeholder="e.g. Special rate for a weekday wedding."></textarea></label>
+          <details class="terms-edit"><summary>Edit terms &amp; conditions</summary><div id="terms"></div><button type="button" class="btn-link" id="addTerm">+ Add term</button></details>
+        </section>
+
+        <!-- 7 Payments -->
+        <section class="card" id="sec-payments">
+          <h3><span>7</span> Payments &amp; receipts</h3>
+          <div id="payLocked" class="muted small">Save the quote first, then record each payment here to create a receipt.</div>
+          <div id="payArea" hidden>
+            <div id="payTotals" class="pay-totals"></div>
+            <div id="payList" class="pay-list"></div>
+            <h4>Record a payment</h4>
+            <div class="grid3">
+              <label>Payment date<input id="payDate" type="date"></label>
+              <label>Amount received (₹)<input id="payAmt" type="number" min="1" step="100" inputmode="numeric"></label>
+              <label>Towards<select id="payMilestone"></select></label>
+              <label>Mode<select id="payMode"><option>UPI</option><option>Bank transfer</option><option>Cash</option><option>Cheque</option><option>Card</option></select></label>
+              <label>Transaction / cheque ref<input id="payTxn" placeholder="UPI ref, UTR or cheque no."></label>
+              <label>Note (on receipt)<input id="payNote" placeholder="Optional"></label>
+            </div>
+            <button type="button" class="btn btn-dark" id="payAdd" style="margin-top:14px">Record payment &amp; create receipt</button>
+          </div>
+        </section>
+
+        <!-- 8 Private -->
+        <section class="card card-private" id="sec-private">
+          <h3><span>8</span> Internal costs &amp; profit <em>Private, never on the quotation</em></h3>
+          <div id="costWarn" class="warn" hidden></div>
+          <div id="costTable" class="cost-table"></div>
+          <h4>Other costs for this wedding</h4>
+          <div id="extraCosts"></div>
+          <button type="button" class="btn-link" id="addCost">+ Add cost (assistant, stay, food, rentals…)</button>
+          <label class="full">Internal notes<textarea data-k="internal" rows="2" placeholder="Negotiation notes, preferences, reminders…"></textarea></label>
+        </section>
+      </div>
+
+      <!-- SUMMARY -->
+      <aside class="ed-side">
+        <div class="summary" id="summary">
+          <div class="sum-head"><p class="eyebrow">Summary</p><span id="sumNo" class="muted"></span></div>
+          <div id="sumLines" class="sum-lines"></div>
+          <div class="sum-total"><span>Final amount</span><b id="sumFinal">₹0</b></div>
+          <div id="budgetBox" class="budget"></div>
+          <div id="profitBox" class="profit"></div>
+          <div id="suggest" class="suggest"></div>
+          <div class="sum-actions">
+            <button class="btn btn-dark" id="saveBtn">Save</button>
+            <button class="btn btn-line" id="pdfBtn">Download PDF</button>
+            <button class="btn btn-wa" id="shareBtn">Share on WhatsApp</button>
+            <button class="btn-link" id="dupBtn">Duplicate as new quote</button>
+          </div>
+          <p class="save-state muted small" id="saveState"></p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Mobile sticky bar -->
+    <div class="mbar">
+      <div><small>Final</small><b id="mFinal">₹0</b><span id="mGap" class="gap-chip"></span></div>
+      <button class="btn btn-line" id="mSummary">Summary</button>
+      <button class="btn btn-dark" id="mSave">Save</button>
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="busy" class="busy" hidden><div class="spinner"></div><p id="busyMsg">Working…</p></div>
+
+<!-- PDF render area (off-screen) -->
+<div id="pdfHost" aria-hidden="true"></div>
+
+<!-- PDF ready dialog -->
+<div id="ready" class="ready" hidden role="dialog" aria-modal="true" aria-labelledby="readyTitle">
+  <div class="ready-card">
+    <h3 id="readyTitle">PDF ready</h3>
+    <p id="readyMsg" class="muted"></p>
+    <div class="ready-actions">
+      <button class="btn btn-wa" id="readyShare">Share on WhatsApp</button>
+      <button class="btn btn-line" id="readyDownload">Download PDF</button>
+      <button class="btn-link" id="readyClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

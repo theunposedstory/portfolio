@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /portfolio/quote/
 
 Sitemap: https://theunposedstory.github.io/portfolio/sitemap.xml

@@ -59,6 +59,21 @@ Open business point: drone add-on (₹5K) undercuts Gold — suggested ~₹12K.
   then Deploy → Manage deployments → New version (URL stays the same).
 - Hidden honeypot field `website` blocks bots (site + script both check it).
 
+## Quotation builder (`/quote/`, added Nov 2026)
+- Private PIN page: https://theunposedstory.github.io/portfolio/quote/ (noindex + robots Disallow).
+  Try with sample data: `/quote/?demo=1` (nothing saved).
+- Files: `quote/index.html`, `quote/app.css`, `quote/app.js`, `quote/vendor/html2pdf.bundle.min.js` (MIT, v0.10.1, self-hosted).
+- Backend = same Apps Script (`docs/google-apps-script/Code.gs`): actions login, bootstrap, saveQuote,
+  getQuote, setStatus, changePin, addPayment, voidPayment. PIN is hashed in Script Properties
+  (first PIN entered becomes the PIN; `resetQuotePin()` in the editor clears it). 6-hour session tokens.
+- Sheet tabs: Quotations (Q-YYYY-NNN), Payments (receipts R-YYYY-NNN, cancelled = "Void", never deleted),
+  Price list (client price + private internal cost per package/add-on; yellow = sample estimates).
+- Quote PDF follows the owner's template (cover band, prepared-for, event schedule, team scope,
+  deliverables, itemised investment, payment schedule, T&C, signatures). No GST (owner not registered).
+- Payment plans: 30/50/20 (default) and 50/50. First payment auto-sets quote Accepted + enquiry Booked.
+- Private profit view: costs from Price list + extra costs; target margin 35% (TARGET_MARGIN in app.js).
+- Service areas (from owner's template): Mumbai, Thane, Navi Mumbai, Pune, pan-India, destination.
+
 ## Hosting / deploy
 - GitHub Pages from `main` of `theunposedstory/portfolio`
   → https://theunposedstory.github.io/portfolio/
