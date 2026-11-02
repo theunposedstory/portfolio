@@ -1,0 +1,48 @@
+THE UNPOSED STORY - ENQUIRY SHEET SETUP (about 2 minutes, one time only)
+=======================================================================
+
+Google only lets the account owner create and approve a script, so this
+part has to be done by you while signed in to:
+    weddings.theunposedstory@gmail.com
+
+STEP 1 - Create the sheet
+  Open  https://sheets.new  (signed in as weddings.theunposedstory@gmail.com)
+  Name it:  The Unposed Story - Website Enquiries
+
+STEP 2 - Add the script
+  Menu: Extensions  >  Apps Script
+  Delete everything in the editor, paste ALL of Code.gs, press Ctrl+S (Save).
+
+STEP 3 - Test it (creates the formatted tab + sends you a test email)
+  In the toolbar dropdown choose  setupAndTest  and click  Run.
+  Google asks for permission:
+    Review permissions > choose weddings.theunposedstory@gmail.com >
+    Advanced > Go to project (unsafe) > Allow
+  ("unsafe" only means Google hasn't reviewed your own private script.)
+  Check: the sheet now has an "Enquiries" tab with one test row,
+         and your Gmail has a "New enquiry: Test Couple" email.
+
+STEP 4 - Publish it as a web app
+  Click  Deploy  >  New deployment  > gear icon > Web app
+     Description:      Website enquiries
+     Execute as:       Me (weddings.theunposedstory@gmail.com)
+     Who has access:   Anyone
+  Click Deploy, then COPY the "Web app URL"
+  (it looks like https://script.google.com/macros/s/AKfy..../exec)
+
+STEP 5 - Send that URL to Claude
+  Paste the Web app URL in the chat. Claude will connect it to your
+  website, publish the update, and send a live test enquiry.
+
+WHAT YOU GET
+  - Every enquiry saved as a row: date, ref, name, partner, WhatsApp, email,
+    wedding date, venue, collection, guests, notes, and an "Open chat" link.
+  - A Status column (New / Contacted / Call booked / Quote sent / Booked / Lost)
+    with colours, so the sheet works as your lead tracker.
+  - An instant email to weddings.theunposedstory@gmail.com for every enquiry,
+    with a green "Reply on WhatsApp" button (works even if the couple never
+    tapped Send in WhatsApp). Turn on Gmail app notifications on your phone.
+
+LATER CHANGES
+  If you ever edit the script: Deploy > Manage deployments > edit (pencil) >
+  Version: New version > Deploy. The URL stays the same.
