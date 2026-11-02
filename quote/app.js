@@ -158,7 +158,11 @@ function start() {
     busy(false);
     if (!r.ok) { lock(r.error); return; }
     applyData(r); $('#login').hidden = true; $('#app').hidden = false; route();
-  }).catch(function () { busy(false); });
+  }).catch(function (e) {
+    busy(false);
+    if (e && e.message === 'expired') return;            // lock() already showed the PIN screen
+    lock('Couldn’t load your data from Google. Please enter your PIN to try again.');
+  });
 }
 function refreshData() {
   return api('bootstrap').then(function (r) {
@@ -937,6 +941,15 @@ var Demo = (function () {
   }
   return { call: call };
 })();
+
+/* ---------------- safety net: never leave a blank screen ---------------- */
+window.addEventListener('error', function () {
+  busy(false);
+  if ($('#login').hidden && $('#app').hidden) {
+    $('#login').hidden = false;
+    $('#loginMsg').innerHTML = 'Something didn’t load properly. <a href="#" onclick="location.reload(true);return false">Reload the page</a>.';
+  }
+});
 
 /* ---------------- boot ---------------- */
 if (DEMO) { S.token = 'demo'; document.title = 'DEMO · ' + document.title; start(); }
