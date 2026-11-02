@@ -238,3 +238,4 @@ label.private{color:var(--maroon)}
 .ready-actions{display:grid;gap:10px;margin-top:16px}
 .kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 @media (max-width:720px){.pay-totals{grid-template-columns:1fr 1fr 1fr;gap:6px}.pay-totals b{font-size:17px}.pay{grid-template-columns:1fr auto}.pay .acts{grid-column:1/-1;justify-content:flex-start}.kpis{grid-template-columns:1fr 1fr}}
+.msg a{color:var(--maroon);font-weight:700}.msg{line-height:1.5}

@@ -110,7 +110,11 @@ $('#loginForm').addEventListener('submit', function (e) {
     S.token = r.token; try { sessionStorage.setItem('tus_tok', r.token); } catch (e) {}
     if (r.pinCreated) toast('PIN saved. Use it every time you log in.', 4000);
     start();
-  }).catch(function () { btn.disabled = false; $('#loginMsg').textContent = 'Could not reach Google. Check your internet and try again.'; });
+  }).catch(function () {
+    btn.disabled = false;
+    $('#loginMsg').innerHTML = 'Couldn’t connect to your Google script. <a href="' + SCRIPT_URL + '" target="_blank" rel="noopener">Test the connection</a>: it should show <b>“enquiries + quotations”</b>. ' +
+      'If you see a sign-in page, set <b>Who has access: Anyone</b>; if it doesn’t say “+ quotations”, paste the new Code.gs and deploy a <b>New version</b>.';
+  });
 });
 $('#logout').addEventListener('click', function () { if (!S.dirty || confirm('You have unsaved changes. Lock anyway?')) { S.dirty = false; lock(); } });
 
