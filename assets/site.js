@@ -1,6 +1,7 @@
 /* The Unposed Story — site behaviour (no dependencies) */
 (function(){
   var WA_NUMBER='917045278377';
+  var WA_ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.4.7-2 1-2.3.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.6-.1 1.1Z"/></svg>';
   var SCRIPT_URL='https://script.google.com/macros/s/AKfycbzd67p90qaIzmWVFP_olrQJs6fzN5JwIgcOrMuDNJIwiaHs6DWKWivNhC0RdK4HVLFt/exec';
 
   // Header border on scroll
@@ -73,28 +74,57 @@
     document.querySelectorAll('.rv-in').forEach(function(el){io.observe(el);});
   } else document.querySelectorAll('.rv-in').forEach(function(el){el.classList.add('on');});
 
-  // Enquiry form: send to Google Sheet, then offer one-tap WhatsApp confirmation
+  // Enquiry form -> opens WhatsApp to Sandip with every detail pre-typed,
+  // and also saves a copy to the Google Sheet in the background.
+  function fmtDate(v){
+    if(!v)return '';
+    var d=new Date(v+'T00:00:00');if(isNaN(d))return v;
+    return d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
+  }
+  function isMobile(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||matchMedia('(pointer:coarse)').matches;}
+  function esc(t){return String(t||'').replace(/[<>&"]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+
   document.querySelectorAll('form[data-enquiry]').forEach(function(form){
     form.addEventListener('submit',function(e){
       e.preventDefault();
       if(!form.reportValidity())return;
       var d={};new FormData(form).forEach(function(v,k){d[k]=String(v).trim();});
-      d.source='Website - '+(document.title||'');
-      var btn=form.querySelector('button[type=submit]');btn.disabled=true;btn.textContent='Sending…';
-      var msg='Hello Sandip, I would like to check availability with The Unposed Story.%0A'+
-        'Name: '+encodeURIComponent(d.name||'')+'%0A'+
-        (d.partner?'Partner: '+encodeURIComponent(d.partner)+'%0A':'')+
-        'Wedding date: '+encodeURIComponent(d.date||'')+'%0A'+
-        'City / venue: '+encodeURIComponent(d.location||'')+
-        (d.package?'%0APackage: '+encodeURIComponent(d.package):'');
-      var waUrl='https://wa.me/'+WA_NUMBER+'?text='+msg;
-      fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)})
-        .catch(function(){})
-        .then(function(){
-          form.innerHTML='<div class="form-done"><h3>Thank you, '+(d.name||'').replace(/[<>&"]/g,'')+'.</h3>'+
-          '<p>Your enquiry has been sent. For the quickest reply, confirm your date with Sandip on WhatsApp.</p>'+
-          '<a class="btn btn-wa" href="'+waUrl+'" target="_blank" rel="noopener">Confirm on WhatsApp</a></div>';
-        });
+      d.ref='TUS-'+Date.now().toString().slice(-6);
+      d.source='Website enquiry form';
+      d.submittedAt=new Date().toISOString();
+
+      var lines=[
+        '*New wedding enquiry - The Unposed Story website*',
+        'Ref: '+d.ref,
+        '',
+        '*Name:* '+d.name,
+        d.partner?'*Partner:* '+d.partner:null,
+        '*WhatsApp:* '+d.phone,
+        d.email?'*Email:* '+d.email:null,
+        '*Wedding date:* '+fmtDate(d.date),
+        d.location?'*City / venue:* '+d.location:null,
+        '*Collection:* '+(d.package||'Not sure yet'),
+        d.guests?'*Guests:* '+d.guests:null,
+        d.message?'':null,
+        d.message?'*About the wedding:*\n'+d.message:null
+      ].filter(function(x){return x!==null;});
+      var waUrl='https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(lines.join('\n'));
+
+      // 1) backup copy to Google Sheet (keepalive survives leaving the page)
+      try{fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)}).catch(function(){});}catch(err){}
+
+      // 2) show confirmation with a manual fallback button
+      form.innerHTML='<div class="form-done">'+
+        '<span class="done-ic" aria-hidden="true">&#10003;</span>'+
+        '<h3>Almost done, '+esc(d.name.split(' ')[0])+'!</h3>'+
+        '<p>WhatsApp is opening with your details already filled in. <strong>Just tap Send</strong> and Sandip will reply within 24 hours.</p>'+
+        '<a class="btn btn-wa" href="'+waUrl+'" target="_blank" rel="noopener">'+WA_ICON+' Open WhatsApp &amp; send</a>'+
+        '<p class="fine">Reference: '+d.ref+' &middot; Prefer to call? <a href="tel:+'+WA_NUMBER+'">+91 70452 78377</a></p></div>';
+
+      form.scrollIntoView({behavior:'smooth',block:'center'});
+      // 3) open WhatsApp straight away (inside the click, so browsers allow it)
+      if(isMobile()){ window.location.href=waUrl; }
+      else { window.open(waUrl,'_blank','noopener'); }
     });
   });
 })();

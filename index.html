@@ -315,11 +315,13 @@
       <div><label for="f-partner">Partner’s name</label><input id="f-partner" name="partner" placeholder="Partner’s name"></div>
       <div><label for="f-phone">WhatsApp number *</label><input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required pattern="[0-9+\s\-]{10,15}" placeholder="+91 98XXX XXXXX"></div>
       <div><label for="f-date">Wedding date *</label><input id="f-date" name="date" type="date" required></div>
+      <div><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" placeholder="you@email.com"></div>
       <div><label for="f-loc">City / venue</label><input id="f-loc" name="location" placeholder="e.g. Thane, Lonavala"></div>
       <div><label for="f-pkg">Collection</label><select id="f-pkg" name="package"><option value="">Not sure yet</option><option>Essential</option><option>Silver</option><option>Gold</option><option>Platinum</option><option>Pre-wedding shoot only</option></select></div>
-      <div class="full"><label for="f-msg">Tell us about your wedding</label><textarea id="f-msg" name="message" placeholder="Functions, guest count, anything special…"></textarea></div>
-      <button class="btn btn-dark" type="submit">Send enquiry</button>
-      <p class="fine">We reply within 24 hours. Your details are only used to contact you about your wedding.</p>
+      <div><label for="f-guests">Guest count</label><select id="f-guests" name="guests"><option value="">Select</option><option>Under 100</option><option>100–200</option><option>200–500</option><option>500+</option></select></div>
+      <div class="full"><label for="f-msg">Tell us about your wedding</label><textarea id="f-msg" name="message" placeholder="Functions (haldi, sangeet, reception), anything special…"></textarea></div>
+      <button class="btn btn-wa" type="submit"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.4.7-2 1-2.3.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.6-.1 1.1Z"/></svg> Send on WhatsApp</button>
+      <p class="fine">Opens WhatsApp with your details filled in, just tap Send. We reply within 24 hours.</p>
     </form>
   </div>
 </section>

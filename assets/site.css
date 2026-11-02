@@ -404,3 +404,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .portrait .main{background:#141414}
 .portrait .main picture{display:block;height:100%}
 .portrait .main img{object-position:50% 18%}
+/* WhatsApp enquiry confirmation */
+.form-done{display:flex;flex-direction:column;align-items:center;gap:6px}
+.form-done .done-ic{width:56px;height:56px;border-radius:50%;background:#1F7A4D;color:#fff;display:grid;place-items:center;font-size:26px;margin-bottom:8px}
+.form-done p{color:var(--ink-2);max-width:40ch;margin:0 0 14px}
+.form-done .btn{width:auto;padding:0 26px}
+.form-done .fine a{color:var(--ink);text-decoration:underline}
+.form-done .fine a{white-space:nowrap}
