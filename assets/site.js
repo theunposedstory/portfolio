@@ -70,7 +70,7 @@
 
   // Reveal on scroll
   if('IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}});},{rootMargin:'0px 0px -8% 0px'});
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}});},{rootMargin:'0px 0px 25% 0px'});
     document.querySelectorAll('.rv-in').forEach(function(el){io.observe(el);});
   } else document.querySelectorAll('.rv-in').forEach(function(el){el.classList.add('on');});
 

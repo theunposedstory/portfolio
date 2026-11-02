@@ -3,7 +3,7 @@
   --ivory:#F7F2EA; --paper:#FBF8F3; --sand:#EFE6D8; --line:#E2D6C3;
   --ink:#1E1A17; --ink-2:#4A423B; --muted:#7A6F64;
   --gold:#B8893E; --gold-d:#8E6526; --wine:#7E1431; --wine-d:#5E0E25;
-  --brand:'Cinzel',Georgia,serif;
+  --brand:'Cormorant Garamond',Georgia,serif;
   --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
   --sans:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
   --wrap:1240px; --gut:clamp(20px,4vw,48px);
@@ -114,7 +114,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* Quote */
 .quote{background:linear-gradient(160deg,#241A17,var(--wine-d));color:var(--ivory);text-align:center;position:relative;overflow:hidden}
-.quote blockquote{margin:0 auto;max-width:900px;font:300 italic clamp(30px,4.2vw,54px)/1.2 var(--serif)}
+.quote blockquote{margin:0 auto;max-width:900px;font:400 italic clamp(30px,4.2vw,54px)/1.2 var(--serif)}
 .quote blockquote em{color:#D9B97E}
 .quote cite{display:block;margin-top:30px;font:600 11px/1 var(--sans);font-style:normal;letter-spacing:.26em;text-transform:uppercase;color:#BFAF98}
 .quote::before{content:"\201C";position:absolute;top:-60px;left:50%;transform:translateX(-50%);font:400 340px/1 var(--serif);color:rgba(255,255,255,.05)}
@@ -250,7 +250,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .lb p{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#D8CDBE;font:italic 18px var(--serif);margin:0}
 
 /* Reveal */
-.rv-in{opacity:0;transform:translateY(24px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.js .rv-in{opacity:0;transform:translateY(10px);transition:opacity .45s var(--ease),transform .45s var(--ease)}
 .rv-in.on{opacity:1;transform:none}
 
 /* ---------- Tablet ---------- */

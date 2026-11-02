@@ -96,9 +96,37 @@ function api(action, data) {
     });
 }
 
+/* ---------------- speed: local cache ----------------
+ * The last dashboard data and recently opened quotes are kept on this device so
+ * screens open instantly; fresh data from Google replaces them in the background.
+ * Cleared when you press Lock. */
+var QC = {};
+function cacheGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function cacheSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function cacheClear() { try { localStorage.removeItem('tus_cache'); localStorage.removeItem('tus_qc'); } catch (e) {} QC = {}; }
+function applyData(r) {
+  S.prices = r.prices || []; S.enquiries = r.enquiries || []; S.quotes = r.quotes || []; S.sheetUrl = r.sheetUrl || '';
+  $('#sheetLink').href = S.sheetUrl || '#'; $('#sheetLink').hidden = !S.sheetUrl;
+  if (!DEMO) cacheSet('tus_cache', { prices: S.prices, enquiries: S.enquiries, quotes: S.quotes, sheetUrl: S.sheetUrl });
+}
+function summaryOf(no) { return S.quotes.filter(function (x) { return x.no === no; })[0]; }
+function rememberQuote(no, q, updated) { QC[no] = { u: updated || '', q: clone(q) }; if (!DEMO) cacheSet('tus_qc', QC); }
+function forgetQuote(no) { delete QC[no]; if (!DEMO) cacheSet('tus_qc', QC); }
+function getQuoteFast(no) {
+  var sm = summaryOf(no), c = QC[no];
+  if (c && sm && c.u && c.u === sm.updated) return Promise.resolve(clone(c.q));
+  return api('getQuote', { id: no }).then(function (r) {
+    if (!r.ok) throw new Error(r.error || 'Not found');
+    var q = Object.assign(blankQuote(), r.quote); q.no = no; q.status = r.quote.status || 'Draft';
+    rememberQuote(no, q, sm && sm.updated); return q;
+  });
+}
+// Wake the Google script early (it is slow on the first request after being idle)
+if (!DEMO) { try { fetch(SCRIPT_URL, { mode: 'no-cors', cache: 'no-store' }).catch(function () {}); } catch (e) {} }
+
 /* ---------------- login ---------------- */
 function lock(msg) {
-  S.token = null; try { sessionStorage.removeItem('tus_tok'); } catch (e) {}
+  S.token = null; try { sessionStorage.removeItem('tus_tok'); } catch (e) {} cacheClear();
   $('#app').hidden = true; $('#login').hidden = false; $('#loginMsg').textContent = msg || ''; $('#pin').value = ''; $('#pin').focus();
 }
 $('#loginForm').addEventListener('submit', function (e) {
@@ -119,17 +147,26 @@ $('#loginForm').addEventListener('submit', function (e) {
 $('#logout').addEventListener('click', function () { if (!S.dirty || confirm('You have unsaved changes. Lock anyway?')) { S.dirty = false; lock(); } });
 
 function start() {
+  var cached = DEMO ? null : cacheGet('tus_cache');
+  QC = (DEMO ? null : cacheGet('tus_qc')) || {};
+  if (cached) {                                   // instant: show last known data, refresh behind the scenes
+    applyData(cached); $('#login').hidden = true; $('#app').hidden = false; route();
+    return refreshData();
+  }
   busy(true, 'Loading your quotations…');
   return api('bootstrap').then(function (r) {
     busy(false);
     if (!r.ok) { lock(r.error); return; }
-    S.prices = r.prices || []; S.enquiries = r.enquiries || []; S.quotes = r.quotes || []; S.sheetUrl = r.sheetUrl || '';
-    $('#sheetLink').href = S.sheetUrl || '#'; $('#sheetLink').hidden = !S.sheetUrl;
-    $('#login').hidden = true; $('#app').hidden = false;
-    route();
+    applyData(r); $('#login').hidden = true; $('#app').hidden = false; route();
   }).catch(function () { busy(false); });
 }
-function refreshData() { return api('bootstrap').then(function (r) { if (r.ok) { S.quotes = r.quotes; S.enquiries = r.enquiries; S.prices = r.prices; if (!$('#dashboard').hidden) renderDashboard(); } }).catch(function () {}); }
+function refreshData() {
+  return api('bootstrap').then(function (r) {
+    if (!r.ok) return;
+    applyData(r);
+    if (!$('#dashboard').hidden) renderDashboard();
+  }).catch(function () {});
+}
 
 /* ---------------- routing ---------------- */
 window.addEventListener('hashchange', function () { if (S.token || DEMO) route(); });
@@ -204,6 +241,7 @@ function renderDashboard() {
   $$('#quoteList [data-st]').forEach(function (sel) {
     sel.onchange = function () {
       var no = sel.dataset.st, st = sel.value;
+      forgetQuote(no);
       api('setStatus', { id: no, status: st }).then(function (r) {
         if (!r.ok) return toast(r.error || 'Could not update');
         S.quotes.forEach(function (q) { if (q.no === no) q.status = st; }); renderDashboard(); toast(no + ' marked ' + st);
@@ -284,7 +322,7 @@ function newQuote(enqRef) {
   } else {
     try { var d = JSON.parse(localStorage.getItem('tus_draft') || 'null'); if (d && !d.no && d.client && d.client.name && confirm('Restore your unsaved draft for ' + d.client.name + '?')) S.q = d; } catch (x) {}
   }
-  S.dirty = false; renderEditor(); showView('editor');
+  S.dirty = false; renderEditor(); showView('editor'); preloadPdfLibs();
   $$('.tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.tab === 'editor'); });
 }
 function fillFromEnquiry(q, e) {
@@ -298,13 +336,15 @@ function fillFromEnquiry(q, e) {
 }
 function openQuote(no) {
   if (S.dirty && !confirm('Discard unsaved changes?')) return;
-  busy(true, 'Opening ' + no + '…');
-  api('getQuote', { id: no }).then(function (r) {
-    busy(false);
-    if (!r.ok) { toast(r.error || 'Not found'); location.hash = 'dashboard'; return; }
-    var q = Object.assign(blankQuote(), r.quote); q.no = no; q.status = r.quote.status || 'Draft';
-    S.q = q; S.dirty = false; renderEditor(); showView('editor');
-  }).catch(function () { busy(false); });
+  var t = setTimeout(function () { busy(true, 'Opening ' + no + '…'); }, 150);   // no flash when it's instant
+  getQuoteFast(no).then(function (q) {
+    clearTimeout(t); busy(false);
+    S.q = q; S.dirty = false; renderEditor(); showView('editor'); preloadPdfLibs();
+  }).catch(function (e) { clearTimeout(t); busy(false); toast(e.message || 'Could not open'); location.hash = 'dashboard'; });
+}
+function preloadPdfLibs() {
+  var c = navigator.connection; if (c && (c.saveData || /2g/.test(c.effectiveType || ''))) return;
+  setTimeout(function () { loadLib().catch(function () {}); loadPdfJs().catch(function () {}); }, 1200);
 }
 function markDirty() {
   S.dirty = true; $('#saveState').textContent = 'Unsaved changes';
@@ -528,6 +568,8 @@ function save(silent) {
     if (!r.ok) { toast(r.error || 'Could not save'); throw new Error('save'); }
     var isNew = !S.q.no;
     S.q.no = r.no; S.q.payments = r.payments || S.q.payments; S.dirty = false;
+    rememberQuote(S.q.no, S.q, r.updated);
+    var sm = summaryOf(S.q.no); if (sm) sm.updated = r.updated;
     try { localStorage.removeItem('tus_draft'); } catch (e) {}
     $('#saveState').textContent = 'Saved ' + new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
     $('#edTitle').textContent = S.q.no + ' · ' + S.q.client.name; $('#sumNo').textContent = S.q.no;
@@ -566,6 +608,7 @@ function renderPayments() {
     b.onclick = function () {
       if (!confirm('Cancel receipt ' + b.dataset.void + '? It stays in your records marked as cancelled.')) return;
       busy(true, 'Cancelling receipt…');
+      forgetQuote(q.no);
       api('voidPayment', { id: q.no, receiptNo: b.dataset.void }).then(function (r) {
         busy(false); if (!r.ok) return toast(r.error);
         q.payments = r.payments; renderPayments(); recalc(); refreshData(); toast('Receipt cancelled');
@@ -583,6 +626,7 @@ $('#payAdd').onclick = function () {
   if (amt <= 0) { toast('Enter the amount received'); $('#payAmt').focus(); return; }
   var go = function () {
     busy(true, 'Recording payment…');
+    forgetQuote(q.no);
     return api('addPayment', { id: q.no, payment: { date: $('#payDate').value, amount: amt, milestone: $('#payMilestone').value, mode: $('#payMode').value, txn: $('#payTxn').value, note: $('#payNote').value } })
       .then(function (r) {
         busy(false); if (!r.ok) return toast(r.error || 'Could not record');
@@ -802,6 +846,7 @@ $('#pvShare').onclick = function () {
   var markSent = function () {
     if (k.kind === 'quote' && k.q && k.q.status === 'Draft') {
       k.q.status = 'Sent'; if (k.q === S.q) $('#qStatus').value = 'Sent';
+      forgetQuote(k.q.no);
       api('setStatus', { id: k.q.no, status: 'Sent' }).then(refreshData).catch(function () {});
     }
   };
@@ -841,11 +886,7 @@ $('#shareBtn').onclick = function () { quotePdf(); };
 
 function previewSaved(no) {
   busy(true, 'Loading ' + no + '…');
-  api('getQuote', { id: no }).then(function (r) {
-    busy(false); if (!r.ok) return toast(r.error || 'Not found');
-    var q = Object.assign(blankQuote(), r.quote); q.no = no; q.status = r.quote.status || 'Draft';
-    quotePdf(q);
-  }).catch(function () { busy(false); });
+  getQuoteFast(no).then(function (q) { busy(false); quotePdf(q); }).catch(function (e) { busy(false); toast(e.message || 'Not found'); });
 }
 
 function receiptPdf(receiptNo, qOther) {
