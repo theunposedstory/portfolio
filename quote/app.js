@@ -559,10 +559,9 @@ function renderPayments() {
   $('#payList').innerHTML = (q.payments || []).slice().reverse().map(function (p) {
     return '<div class="pay' + (p.status === 'Void' ? ' void' : '') + '"><span class="rno">' + esc(p.receiptNo) + '</span>' +
       '<div><span class="amt">' + inr(p.amount) + '</span> <span class="meta">· ' + esc(fmtDate(p.date)) + ' · ' + esc(p.mode) + (p.txn ? ' · ' + esc(p.txn) : '') + '<br>' + esc(p.milestone) + (p.status === 'Void' ? ' · CANCELLED' : '') + '</span></div>' +
-      '<div class="acts">' + (p.status !== 'Void' ? '<button class="btn btn-line" data-rpv="' + esc(p.receiptNo) + '">Preview</button><button class="btn btn-wa" data-rshare="' + esc(p.receiptNo) + '">Receipt</button><button class="btn btn-line" data-void="' + esc(p.receiptNo) + '">Cancel</button>' : '') + '</div></div>';
+      '<div class="acts">' + (p.status !== 'Void' ? '<button class="btn btn-wa" data-rshare="' + esc(p.receiptNo) + '">View receipt</button><button class="btn btn-line" data-void="' + esc(p.receiptNo) + '">Cancel</button>' : '') + '</div></div>';
   }).join('') || '<div class="empty">No payments recorded yet.</div>';
   $$('[data-rshare]').forEach(function (b) { b.onclick = function () { receiptPdf(b.dataset.rshare); }; });
-  $$('[data-rpv]').forEach(function (b) { b.onclick = function () { previewReceipt(b.dataset.rpv); }; });
   $$('[data-void]').forEach(function (b) {
     b.onclick = function () {
       if (!confirm('Cancel receipt ' + b.dataset.void + '? It stays in your records marked as cancelled.')) return;
@@ -743,23 +742,75 @@ function receiptHtml(q, p) {
     footerBlock() + '</div>';
 }
 
-/* PDF ready dialog (fresh tap = reliable sharing on phones) */
-var ready = { file: null, text: '', phone: '' };
-function showReady(file, text, phone, title) {
-  ready = { file: file, text: text, phone: phone };
-  $('#readyTitle').textContent = title; $('#readyMsg').textContent = file.name;
-  $('#ready').hidden = false; $('#readyShare').focus();
+/* ---------------- PDF preview → download / share ----------------
+ * Every quotation or receipt is shown as the real PDF (rendered with pdf.js)
+ * before it is downloaded or shared. The Share tap inside the preview is a fresh
+ * user gesture, so phone share sheets open reliably. */
+var PV = { file: null, text: '', phone: '', q: null, kind: '', editNo: null };
+var pdfjsPromise;
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve();
+  pdfjsPromise = pdfjsPromise || new Promise(function (res, rej) {
+    var s = document.createElement('script'); s.src = 'vendor/pdfjs/pdf.min.js';
+    s.onload = function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js'; res(); };
+    s.onerror = rej; document.head.appendChild(s);
+  });
+  return pdfjsPromise;
 }
-$('#readyClose').onclick = function () { $('#ready').hidden = true; };
-$('#readyDownload').onclick = function () { download(ready.file); };
-$('#readyShare').onclick = function () {
-  var f = ready.file;
+function renderPdf(file) {
+  var host = $('#pvPages'); host.innerHTML = '';
+  return loadPdfJs().then(function () { return file.arrayBuffer(); })
+    .then(function (buf) { return window.pdfjsLib.getDocument({ data: buf }).promise; })
+    .then(function (doc) {
+      var w = Math.min($('#pvScroll').clientWidth - 24, 860), dpr = Math.min(window.devicePixelRatio || 1, 2.5), chain = Promise.resolve();
+      for (var i = 1; i <= doc.numPages; i++) (function (n) {
+        chain = chain.then(function () { return doc.getPage(n); }).then(function (page) {
+          var base = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: w / base.width * dpr });
+          var c = document.createElement('canvas'); c.className = 'pv-canvas';
+          c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+          c.style.width = w + 'px'; c.style.height = Math.floor(vp.height / dpr) + 'px';
+          c.setAttribute('aria-label', 'Page ' + n + ' of ' + doc.numPages);
+          host.appendChild(c);
+          return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+        });
+      })(i);
+      return chain.then(function () { return doc.numPages; });
+    });
+}
+function showPdf(file, o) {
+  PV = Object.assign({ file: file }, o);
+  $('#pvTitle').textContent = o.title; $('#pvSub').textContent = o.sub || '';
+  $('#pvEdit').hidden = !o.editNo;
+  $('#pvShare').textContent = o.kind === 'receipt' ? 'Share receipt on WhatsApp' : 'Share on WhatsApp';
+  $('#preview').hidden = false; document.body.style.overflow = 'hidden'; $('#pvScroll').scrollTop = 0;
+  busy(true, 'Opening PDF preview…');
+  renderPdf(file).then(function (n) {
+    busy(false); $('#pvSub').textContent = (o.sub ? o.sub + ' · ' : '') + n + ' page' + (n > 1 ? 's' : '') + ' · ' + file.name;
+    $('#pvShare').focus();
+  }).catch(function (e) {
+    busy(false); console.error(e);
+    $('#pvPages').innerHTML = '<div class="pv-fallback">Preview isn’t available on this device, but your PDF is ready. Use <b>Download PDF</b> or <b>Share</b> above.</div>';
+  });
+}
+function closePreview() { $('#preview').hidden = true; document.body.style.overflow = ''; $('#pvPages').innerHTML = ''; }
+$('#pvClose').onclick = closePreview;
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#preview').hidden) closePreview(); });
+$('#pvEdit').onclick = function () { var no = PV.editNo; closePreview(); if (no) location.hash = 'q/' + encodeURIComponent(no); };
+$('#pvPdf').onclick = function () { download(PV.file); toast('Downloaded ' + PV.file.name); };
+$('#pvShare').onclick = function () {
+  var f = PV.file, k = PV;
+  var markSent = function () {
+    if (k.kind === 'quote' && k.q && k.q.status === 'Draft') {
+      k.q.status = 'Sent'; if (k.q === S.q) $('#qStatus').value = 'Sent';
+      api('setStatus', { id: k.q.no, status: 'Sent' }).then(refreshData).catch(function () {});
+    }
+  };
   if (navigator.canShare && navigator.canShare({ files: [f] })) {
-    navigator.share({ files: [f], text: ready.text, title: f.name }).then(function () { $('#ready').hidden = true; }).catch(function () {});
+    navigator.share({ files: [f], text: k.text, title: f.name }).then(function () { markSent(); closePreview(); toast('Shared'); }).catch(function () {});
   } else {
     download(f);
-    var url = 'https://wa.me/' + (waNum(ready.phone) || '') + '?text=' + encodeURIComponent(ready.text + '\n\n(PDF attached)');
-    window.open(url, '_blank', 'noopener');
+    window.open('https://wa.me/' + (waNum(k.phone) || '') + '?text=' + encodeURIComponent(k.text + '\n\n(PDF attached)'), '_blank', 'noopener');
+    markSent();
     toast('PDF downloaded. Attach it in the WhatsApp chat that just opened.', 5000);
   }
 };
@@ -769,7 +820,8 @@ function download(file) {
 }
 function safeName(s) { return String(s || '').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-'); }
 
-function quotePdf(share, qOther) {
+/* Build the quotation PDF and show it. qOther = a saved quote opened from the dashboard. */
+function quotePdf(qOther) {
   if (!qOther && !validate()) return;
   var p = qOther ? Promise.resolve() : (S.dirty || !S.q.no ? save(true) : Promise.resolve());
   p.then(function () {
@@ -779,13 +831,22 @@ function quotePdf(share, qOther) {
       busy(false);
       var text = 'Hi ' + first + ', thank you for considering The Unposed Story for your wedding! 💛\n\nPlease find your quotation ' + q.no + ' attached.\nTotal investment: ' + inr(t.final) +
         '\nValid until: ' + fmtDate(t.validUntil, true) + '\n\nHappy to answer any questions or walk you through it on a call.\n— Sandip Lade, The Unposed Story';
-      if (share && q.status === 'Draft') { q.status = 'Sent'; if (q === S.q) $('#qStatus').value = 'Sent'; api('setStatus', { id: q.no, status: 'Sent' }).then(refreshData); }
-      showReady(file, text, q.client.phone, share ? 'Quotation ready to share' : 'Quotation PDF ready');
+      showPdf(file, { kind: 'quote', q: q, text: text, phone: q.client.phone, editNo: qOther ? q.no : null,
+        title: 'Quotation ' + q.no + ' · ' + q.client.name, sub: inr(t.final) + ' · ' + q.status });
     });
   }).catch(function (e) { busy(false); if (e && e.message !== 'invalid' && e.message !== 'save') { console.error(e); toast('Could not create the PDF. Please try again.'); } });
 }
-$('#pdfBtn').onclick = function () { quotePdf(false); };
-$('#shareBtn').onclick = function () { quotePdf(true); };
+$('#pvBtn').onclick = function () { quotePdf(); };
+$('#shareBtn').onclick = function () { quotePdf(); };
+
+function previewSaved(no) {
+  busy(true, 'Loading ' + no + '…');
+  api('getQuote', { id: no }).then(function (r) {
+    busy(false); if (!r.ok) return toast(r.error || 'Not found');
+    var q = Object.assign(blankQuote(), r.quote); q.no = no; q.status = r.quote.status || 'Draft';
+    quotePdf(q);
+  }).catch(function () { busy(false); });
+}
 
 function receiptPdf(receiptNo, qOther) {
   var q = qOther || S.q, p = (q.payments || []).filter(function (x) { return x.receiptNo === receiptNo; })[0];
@@ -797,56 +858,9 @@ function receiptPdf(receiptNo, qOther) {
     var upto = (q.payments || []).filter(function (x) { return x.status !== 'Void' && x.receiptNo <= receiptNo; }).reduce(function (s, x) { return s + num(x.amount); }, 0);
     var text = 'Hi ' + first + ', thank you! We have received ' + inr(p.amount) + ' (' + p.mode + ') towards ' + p.milestone + '.\n\nReceipt ' + receiptNo + ' is attached.\nTotal received: ' + inr(upto) +
       ' · Balance: ' + inr(t.final - upto) + '\n\n— Sandip Lade, The Unposed Story';
-    showReady(file, text, q.client.phone, 'Receipt ready to share');
+    showPdf(file, { kind: 'receipt', q: q, text: text, phone: q.client.phone, title: 'Receipt ' + receiptNo + ' · ' + q.client.name, sub: inr(p.amount) + ' · ' + fmtDate(p.date) + ' · ' + p.mode });
   }).catch(function (e) { busy(false); console.error(e); toast('Could not create the receipt PDF.'); });
 }
-
-/* ---------------- preview ---------------- */
-var PV = { kind: null, q: null, receiptNo: null };
-function openPreview(html, title, sub) {
-  $('#pvPage').innerHTML = html; $('#pvTitle').textContent = title; $('#pvSub').textContent = sub || '';
-  $('#preview').hidden = false; document.body.style.overflow = 'hidden'; $('#pvScroll').scrollTop = 0;
-  fitPreview(); $('#pvClose').focus();
-}
-function fitPreview() {
-  if ($('#preview').hidden) return;
-  var page = $('#pvPage'), sheet = $('#pvSheet'), avail = $('#pvScroll').clientWidth - 24;
-  var sc = Math.min(1, avail / 778);                 // 718px document + 30px paper padding each side
-  page.style.transform = 'scale(' + sc + ')';
-  sheet.style.width = (778 * sc) + 'px'; sheet.style.height = (page.offsetHeight * sc) + 'px';
-}
-window.addEventListener('resize', fitPreview);
-function closePreview() { $('#preview').hidden = true; document.body.style.overflow = ''; $('#pvPage').innerHTML = ''; }
-$('#pvClose').onclick = closePreview;
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#preview').hidden) closePreview(); });
-
-function previewQuote(q, fromEditor) {
-  PV = { kind: 'quote', q: q, fromEditor: fromEditor };
-  var t = compute(q);
-  $('#pvEdit').hidden = !!fromEditor; $('#pvShare').textContent = 'Share on WhatsApp';
-  openPreview(quoteHtml(q), (q.no || 'Draft quotation') + ' · ' + (q.client.name || 'Client'), inr(t.final) + ' · ' + q.status + (fromEditor && S.dirty ? ' · unsaved changes shown' : ''));
-}
-function previewSaved(no) {
-  busy(true, 'Loading ' + no + '…');
-  api('getQuote', { id: no }).then(function (r) {
-    busy(false); if (!r.ok) return toast(r.error || 'Not found');
-    var q = Object.assign(blankQuote(), r.quote); q.no = no; q.status = r.quote.status || 'Draft';
-    previewQuote(q, false);
-  }).catch(function () { busy(false); });
-}
-function previewReceipt(receiptNo) {
-  var q = S.q, p = (q.payments || []).filter(function (x) { return x.receiptNo === receiptNo; })[0]; if (!p) return;
-  PV = { kind: 'receipt', q: q, receiptNo: receiptNo, fromEditor: true };
-  $('#pvEdit').hidden = true;
-  openPreview(receiptHtml(q, p), 'Receipt ' + receiptNo, inr(p.amount) + ' · ' + fmtDate(p.date) + ' · ' + p.mode);
-}
-$('#pvBtn').onclick = function () {
-  if (!S.q.client.name && !compute(S.q).final) { toast('Add the client and a package first'); return; }
-  recalc(); previewQuote(S.q, true);
-};
-$('#pvEdit').onclick = function () { var no = PV.q && PV.q.no; closePreview(); if (no) location.hash = 'q/' + encodeURIComponent(no); };
-$('#pvPdf').onclick = function () { var k = PV; closePreview(); if (k.kind === 'receipt') receiptPdf(k.receiptNo, k.q); else quotePdf(false, k.fromEditor ? null : k.q); };
-$('#pvShare').onclick = function () { var k = PV; closePreview(); if (k.kind === 'receipt') receiptPdf(k.receiptNo, k.q); else quotePdf(true, k.fromEditor ? null : k.q); };
 
 /* ---------------- demo backend (for ?demo=1 previews) ---------------- */
 var Demo = (function () {

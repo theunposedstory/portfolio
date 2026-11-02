@@ -207,9 +207,8 @@
           <div id="suggest" class="suggest"></div>
           <div class="sum-actions">
             <button class="btn btn-dark" id="saveBtn">Save</button>
-            <button class="btn btn-line" id="pvBtn">Preview quotation</button>
-            <button class="btn btn-line" id="pdfBtn">Download PDF</button>
-            <button class="btn btn-wa" id="shareBtn">Share on WhatsApp</button>
+            <button class="btn btn-line" id="pvBtn">Preview &amp; download PDF</button>
+            <button class="btn btn-wa" id="shareBtn">Preview &amp; share on WhatsApp</button>
             <button class="btn-link" id="dupBtn">Duplicate as new quote</button>
           </div>
           <p class="save-state muted small" id="saveState"></p>
@@ -240,24 +239,13 @@
       <button class="pv-x" id="pvClose" aria-label="Close preview">×</button>
     </div>
   </div>
-  <div class="pv-scroll" id="pvScroll"><div class="pv-sheet" id="pvSheet"><div class="pv-page" id="pvPage"></div></div></div>
+  <div class="pv-scroll" id="pvScroll"><div class="pv-pages" id="pvPages"></div></div>
 </div>
 
 <!-- PDF render area (off-screen) -->
 <div id="pdfHost" aria-hidden="true"></div>
 
-<!-- PDF ready dialog -->
-<div id="ready" class="ready" hidden role="dialog" aria-modal="true" aria-labelledby="readyTitle">
-  <div class="ready-card">
-    <h3 id="readyTitle">PDF ready</h3>
-    <p id="readyMsg" class="muted"></p>
-    <div class="ready-actions">
-      <button class="btn btn-wa" id="readyShare">Share on WhatsApp</button>
-      <button class="btn btn-line" id="readyDownload">Download PDF</button>
-      <button class="btn-link" id="readyClose">Close</button>
-    </div>
-  </div>
-</div>
+
 
 <script src="app.js"></script>
 </body>
