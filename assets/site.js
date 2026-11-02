@@ -88,6 +88,7 @@
     form.addEventListener('submit',function(e){
       e.preventDefault();
       if(!form.reportValidity())return;
+      if(form.website&&form.website.value)return; // spam bot
       var d={};new FormData(form).forEach(function(v,k){d[k]=String(v).trim();});
       d.ref='TUS-'+Date.now().toString().slice(-6);
       d.source='Website enquiry form';
