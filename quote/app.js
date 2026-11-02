@@ -197,8 +197,9 @@ function renderDashboard() {
         '<span class="amt">' + inr(q.final) + (q.paid ? '<br><small class="muted">paid ' + inr(q.paid) + '</small>' : '') + '</span>' +
         '<span class="mg-cell"><span class="mg ' + cls + '">' + m.toFixed(1) + '%</span></span>' +
         '<select data-st="' + esc(q.no) + '">' + QSTATUSES.map(function (x) { return '<option' + (x === q.status ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>' +
-        '<button class="btn btn-line" data-open="' + esc(q.no) + '">Open</button></div>';
+        '<span class="row-acts"><button class="btn btn-line" data-pv="' + esc(q.no) + '">Preview</button><button class="btn btn-dark" data-open="' + esc(q.no) + '">Open</button></span></div>';
     }).join('') : '<div class="empty">' + (Q.length ? 'No quotations match this filter.' : 'No quotations yet. Create your first one.') + '</div>';
+  $$('#quoteList [data-pv]').forEach(function (b) { b.onclick = function () { previewSaved(b.dataset.pv); }; });
   $$('#quoteList [data-open]').forEach(function (b) { b.onclick = function () { location.hash = 'q/' + encodeURIComponent(b.dataset.open); }; });
   $$('#quoteList [data-st]').forEach(function (sel) {
     sel.onchange = function () {
@@ -558,9 +559,10 @@ function renderPayments() {
   $('#payList').innerHTML = (q.payments || []).slice().reverse().map(function (p) {
     return '<div class="pay' + (p.status === 'Void' ? ' void' : '') + '"><span class="rno">' + esc(p.receiptNo) + '</span>' +
       '<div><span class="amt">' + inr(p.amount) + '</span> <span class="meta">· ' + esc(fmtDate(p.date)) + ' · ' + esc(p.mode) + (p.txn ? ' · ' + esc(p.txn) : '') + '<br>' + esc(p.milestone) + (p.status === 'Void' ? ' · CANCELLED' : '') + '</span></div>' +
-      '<div class="acts">' + (p.status !== 'Void' ? '<button class="btn btn-wa" data-rshare="' + esc(p.receiptNo) + '">Receipt</button><button class="btn btn-line" data-void="' + esc(p.receiptNo) + '">Cancel</button>' : '') + '</div></div>';
+      '<div class="acts">' + (p.status !== 'Void' ? '<button class="btn btn-line" data-rpv="' + esc(p.receiptNo) + '">Preview</button><button class="btn btn-wa" data-rshare="' + esc(p.receiptNo) + '">Receipt</button><button class="btn btn-line" data-void="' + esc(p.receiptNo) + '">Cancel</button>' : '') + '</div></div>';
   }).join('') || '<div class="empty">No payments recorded yet.</div>';
   $$('[data-rshare]').forEach(function (b) { b.onclick = function () { receiptPdf(b.dataset.rshare); }; });
+  $$('[data-rpv]').forEach(function (b) { b.onclick = function () { previewReceipt(b.dataset.rpv); }; });
   $$('[data-void]').forEach(function (b) {
     b.onclick = function () {
       if (!confirm('Cancel receipt ' + b.dataset.void + '? It stays in your records marked as cancelled.')) return;
@@ -767,17 +769,17 @@ function download(file) {
 }
 function safeName(s) { return String(s || '').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-'); }
 
-function quotePdf(share) {
-  if (!validate()) return;
-  var p = S.dirty || !S.q.no ? save(true) : Promise.resolve();
+function quotePdf(share, qOther) {
+  if (!qOther && !validate()) return;
+  var p = qOther ? Promise.resolve() : (S.dirty || !S.q.no ? save(true) : Promise.resolve());
   p.then(function () {
     busy(true, 'Creating your quotation PDF…');
-    var q = S.q, t = compute(q), first = String(q.client.name).split(/[ &]/)[0];
+    var q = qOther || S.q, t = compute(q), first = String(q.client.name).split(/[ &]/)[0];
     return makePdf(quoteHtml(q), 'Quotation-' + q.no + '-' + safeName(q.client.name) + '.pdf', 'The Unposed Story · Quotation ' + q.no + ' · ' + BRAND.phone).then(function (file) {
       busy(false);
       var text = 'Hi ' + first + ', thank you for considering The Unposed Story for your wedding! 💛\n\nPlease find your quotation ' + q.no + ' attached.\nTotal investment: ' + inr(t.final) +
         '\nValid until: ' + fmtDate(t.validUntil, true) + '\n\nHappy to answer any questions or walk you through it on a call.\n— Sandip Lade, The Unposed Story';
-      if (share && q.status === 'Draft') { q.status = 'Sent'; $('#qStatus').value = 'Sent'; api('setStatus', { id: q.no, status: 'Sent' }).then(refreshData); }
+      if (share && q.status === 'Draft') { q.status = 'Sent'; if (q === S.q) $('#qStatus').value = 'Sent'; api('setStatus', { id: q.no, status: 'Sent' }).then(refreshData); }
       showReady(file, text, q.client.phone, share ? 'Quotation ready to share' : 'Quotation PDF ready');
     });
   }).catch(function (e) { busy(false); if (e && e.message !== 'invalid' && e.message !== 'save') { console.error(e); toast('Could not create the PDF. Please try again.'); } });
@@ -785,8 +787,8 @@ function quotePdf(share) {
 $('#pdfBtn').onclick = function () { quotePdf(false); };
 $('#shareBtn').onclick = function () { quotePdf(true); };
 
-function receiptPdf(receiptNo) {
-  var q = S.q, p = (q.payments || []).filter(function (x) { return x.receiptNo === receiptNo; })[0];
+function receiptPdf(receiptNo, qOther) {
+  var q = qOther || S.q, p = (q.payments || []).filter(function (x) { return x.receiptNo === receiptNo; })[0];
   if (!p) return;
   busy(true, 'Creating receipt ' + receiptNo + '…');
   makePdf(receiptHtml(q, p), 'Receipt-' + receiptNo + '-' + safeName(q.client.name) + '.pdf', 'The Unposed Story · Receipt ' + receiptNo + ' · ' + BRAND.phone).then(function (file) {
@@ -798,6 +800,53 @@ function receiptPdf(receiptNo) {
     showReady(file, text, q.client.phone, 'Receipt ready to share');
   }).catch(function (e) { busy(false); console.error(e); toast('Could not create the receipt PDF.'); });
 }
+
+/* ---------------- preview ---------------- */
+var PV = { kind: null, q: null, receiptNo: null };
+function openPreview(html, title, sub) {
+  $('#pvPage').innerHTML = html; $('#pvTitle').textContent = title; $('#pvSub').textContent = sub || '';
+  $('#preview').hidden = false; document.body.style.overflow = 'hidden'; $('#pvScroll').scrollTop = 0;
+  fitPreview(); $('#pvClose').focus();
+}
+function fitPreview() {
+  if ($('#preview').hidden) return;
+  var page = $('#pvPage'), sheet = $('#pvSheet'), avail = $('#pvScroll').clientWidth - 24;
+  var sc = Math.min(1, avail / 778);                 // 718px document + 30px paper padding each side
+  page.style.transform = 'scale(' + sc + ')';
+  sheet.style.width = (778 * sc) + 'px'; sheet.style.height = (page.offsetHeight * sc) + 'px';
+}
+window.addEventListener('resize', fitPreview);
+function closePreview() { $('#preview').hidden = true; document.body.style.overflow = ''; $('#pvPage').innerHTML = ''; }
+$('#pvClose').onclick = closePreview;
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#preview').hidden) closePreview(); });
+
+function previewQuote(q, fromEditor) {
+  PV = { kind: 'quote', q: q, fromEditor: fromEditor };
+  var t = compute(q);
+  $('#pvEdit').hidden = !!fromEditor; $('#pvShare').textContent = 'Share on WhatsApp';
+  openPreview(quoteHtml(q), (q.no || 'Draft quotation') + ' · ' + (q.client.name || 'Client'), inr(t.final) + ' · ' + q.status + (fromEditor && S.dirty ? ' · unsaved changes shown' : ''));
+}
+function previewSaved(no) {
+  busy(true, 'Loading ' + no + '…');
+  api('getQuote', { id: no }).then(function (r) {
+    busy(false); if (!r.ok) return toast(r.error || 'Not found');
+    var q = Object.assign(blankQuote(), r.quote); q.no = no; q.status = r.quote.status || 'Draft';
+    previewQuote(q, false);
+  }).catch(function () { busy(false); });
+}
+function previewReceipt(receiptNo) {
+  var q = S.q, p = (q.payments || []).filter(function (x) { return x.receiptNo === receiptNo; })[0]; if (!p) return;
+  PV = { kind: 'receipt', q: q, receiptNo: receiptNo, fromEditor: true };
+  $('#pvEdit').hidden = true;
+  openPreview(receiptHtml(q, p), 'Receipt ' + receiptNo, inr(p.amount) + ' · ' + fmtDate(p.date) + ' · ' + p.mode);
+}
+$('#pvBtn').onclick = function () {
+  if (!S.q.client.name && !compute(S.q).final) { toast('Add the client and a package first'); return; }
+  recalc(); previewQuote(S.q, true);
+};
+$('#pvEdit').onclick = function () { var no = PV.q && PV.q.no; closePreview(); if (no) location.hash = 'q/' + encodeURIComponent(no); };
+$('#pvPdf').onclick = function () { var k = PV; closePreview(); if (k.kind === 'receipt') receiptPdf(k.receiptNo, k.q); else quotePdf(false, k.fromEditor ? null : k.q); };
+$('#pvShare').onclick = function () { var k = PV; closePreview(); if (k.kind === 'receipt') receiptPdf(k.receiptNo, k.q); else quotePdf(true, k.fromEditor ? null : k.q); };
 
 /* ---------------- demo backend (for ?demo=1 previews) ---------------- */
 var Demo = (function () {

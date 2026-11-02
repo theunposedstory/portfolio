@@ -207,6 +207,7 @@
           <div id="suggest" class="suggest"></div>
           <div class="sum-actions">
             <button class="btn btn-dark" id="saveBtn">Save</button>
+            <button class="btn btn-line" id="pvBtn">Preview quotation</button>
             <button class="btn btn-line" id="pdfBtn">Download PDF</button>
             <button class="btn btn-wa" id="shareBtn">Share on WhatsApp</button>
             <button class="btn-link" id="dupBtn">Duplicate as new quote</button>
@@ -227,6 +228,20 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <div id="busy" class="busy" hidden><div class="spinner"></div><p id="busyMsg">Working…</p></div>
+
+<!-- Preview -->
+<div id="preview" class="pv" hidden role="dialog" aria-modal="true" aria-labelledby="pvTitle">
+  <div class="pv-bar">
+    <div class="pv-title"><b id="pvTitle">Preview</b><span id="pvSub" class="muted small"></span></div>
+    <div class="pv-acts">
+      <button class="btn btn-line" id="pvEdit">Edit</button>
+      <button class="btn btn-line" id="pvPdf">Download PDF</button>
+      <button class="btn btn-wa" id="pvShare">Share on WhatsApp</button>
+      <button class="pv-x" id="pvClose" aria-label="Close preview">×</button>
+    </div>
+  </div>
+  <div class="pv-scroll" id="pvScroll"><div class="pv-sheet" id="pvSheet"><div class="pv-page" id="pvPage"></div></div></div>
+</div>
 
 <!-- PDF render area (off-screen) -->
 <div id="pdfHost" aria-hidden="true"></div>
