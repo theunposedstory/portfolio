@@ -264,7 +264,7 @@ function blankQuote() {
   var q = {
     no: null, status: 'Draft', ref: '', client: { name: '', partner: '', phone: '', email: '', date: '', venue: '', guests: '' },
     events: EVENT_PRESETS.map(function (n) { return { on: n === 'Wedding ceremony', name: n, date: '', venue: '', timing: n === 'Wedding ceremony' ? 'Full day' : '' }; }),
-    pkg: 'Gold', days: 1, addons: {}, custom: [], travel: { charge: 0, cost: 0 }, extraCosts: [],
+    pkg: 'Gold', days: 1, customPkg: { name: '', price: '', cost: '', inclusions: '' }, addons: {}, custom: [], travel: { charge: 0, cost: 0 }, extraCosts: [],
     team: {}, deliv: {}, delivMode: 'Google Drive cloud link + USB pen drive',
     budget: '', discount: { type: 'amt', value: '' }, round: '500', plan: '30-50-20',
     quoteDate: today(), validDays: 7, notes: '', internal: '', terms: DEFAULT_TERMS.slice(), payments: []
@@ -280,6 +280,12 @@ function compute(q) {
   if (pk) {
     lines.push({ label: pk.name + ' package' + (days > 1 ? ' × ' + days + ' days' : ''), amount: pk.price * days, kind: 'pkg' });
     cost.push([pk.name + ' package' + (days > 1 ? ' × ' + days : ''), pk.cost * days]); if (!pk.costConfirmed) unconfirmed.push(pk.name);
+  } else if (q.pkg === 'Custom') {
+    var cp = q.customPkg || {}, cname = String(cp.name || '').trim() || 'Custom package';
+    if (num(cp.price) > 0) {
+      lines.push({ label: cname + (days > 1 ? ' × ' + days + ' days' : ''), amount: num(cp.price) * days, kind: 'pkg' });
+      cost.push([cname + (days > 1 ? ' × ' + days : ''), num(cp.cost) * days]);
+    }
   }
   addonsList().forEach(function (a) {
     var n = num(q.addons[a.name]); if (n > 0) {
@@ -375,6 +381,7 @@ $$('#editor [data-k]').forEach(function (el) {
   el.addEventListener('input', function () {
     var v = el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value;
     set(S.q, el.dataset.k, v); markDirty(); recalc();
+    if (el.dataset.k.indexOf('customPkg.') === 0) renderPackages();
   });
 });
 $('#qStatus').addEventListener('change', function (e) { S.q.status = e.target.value; markDirty(); });
@@ -411,10 +418,16 @@ $('#addEvent').onclick = function () { S.q.events.push({ on: true, name: '', dat
 function renderPackages() {
   var list = packages().map(function (p) { return { name: p.name, price: p.price }; }).concat([{ name: 'Custom', price: null }]);
   $('#pkgCards').innerHTML = list.map(function (p) {
-    return '<button type="button" class="pkg' + (S.q.pkg === p.name ? ' on' : '') + '" data-p="' + esc(p.name) + '"><b>' + esc(p.name) + '</b><span>' + (p.price == null ? 'Build from items' : inr(p.price) + ' / day') + '</span></button>';
+    var cp = S.q.customPkg || {};
+    var sub = p.price == null ? (num(cp.price) ? inr(cp.price) + ' / day' : 'Set your own price') : inr(p.price) + ' / day';
+    return '<button type="button" class="pkg' + (S.q.pkg === p.name ? ' on' : '') + '" data-p="' + esc(p.name) + '"><b>' + esc(p.name) + '</b><span>' + sub + '</span></button>';
   }).join('');
+  $('#customPkgBox').hidden = S.q.pkg !== 'Custom';
   $$('#pkgCards .pkg').forEach(function (b) {
-    b.onclick = function () { S.q.pkg = b.dataset.p; applyPreset(S.q, S.q.pkg); markDirty(); renderPackages(); renderTeam(); renderDeliv(); recalc(); };
+    b.onclick = function () {
+      S.q.pkg = b.dataset.p; applyPreset(S.q, S.q.pkg); markDirty(); renderPackages(); renderTeam(); renderDeliv(); recalc();
+      if (S.q.pkg === 'Custom') { var f = $('[data-k="customPkg.price"]'); if (f && !f.value) setTimeout(function () { $('#customPkgBox').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('[data-k="customPkg.name"]').focus(); }, 50); }
+    };
   });
 }
 function renderAddons() {
@@ -559,7 +572,11 @@ function renderSuggestions(t) {
 function validate() {
   var q = S.q;
   if (!q.client.name) { toast('Add the client name first'); $('[data-k="client.name"]').focus(); return false; }
-  if (!compute(q).final) { toast('Choose a package or add an item first'); return false; }
+  if (!compute(q).final) {
+    if (q.pkg === 'Custom') { toast('Enter the custom package price per day'); var f = $('[data-k="customPkg.price"]'); if (f) f.focus(); }
+    else toast('Choose a package or add an item first');
+    return false;
+  }
   return true;
 }
 function save(silent) {
@@ -742,7 +759,8 @@ function quoteHtml(q) {
       (q.delivMode ? '<p style="margin:6px 0 0"><b>Delivery mode:</b> ' + esc(q.delivMode) + '</p>' : '') + '</div>' : '') +
     '<div class="avoid"><h2>Investment</h2><table><tr><th>Description</th><th class="num">Amount (INR)</th></tr>' +
       t.lines.map(function (l) {
-        var extra = l.kind === 'pkg' && pk && pk.inclusions.length ? '<div class="muted" style="font-size:11px">' + esc(pk.inclusions.join(' · ')) + '</div>' : '';
+        var inc = pk ? pk.inclusions : String((q.customPkg || {}).inclusions || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+        var extra = l.kind === 'pkg' && inc.length ? '<div class="muted" style="font-size:11px">' + esc(inc.join(' · ')) + '</div>' : '';
         return '<tr><td>' + esc(l.label) + extra + '</td><td class="num">' + inr(l.amount) + '</td></tr>';
       }).join('') +
       (t.discount ? '<tr class="sub"><td>Subtotal</td><td class="num">' + inr(t.subtotal) + '</td></tr><tr class="disc"><td>Special discount</td><td class="num">−' + inr(t.discount) + '</td></tr>' : '') +

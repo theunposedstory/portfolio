@@ -265,3 +265,4 @@ html,body{overflow-x:hidden;max-width:100%}
 .pv-canvas{display:block;background:#fff;box-shadow:0 18px 40px -18px rgba(0,0,0,.7);border-radius:2px}
 .pv-fallback{max-width:520px;margin:40px auto;background:var(--paper);border-radius:14px;padding:22px;text-align:center}
 @media (max-width:720px){.pv-acts{grid-template-columns:1fr 1fr 42px}.pv-acts #pvEdit:not([hidden]){grid-column:1/-1}}
+.custom-pkg{background:#FFF9F3;border:1.5px solid var(--maroon);border-radius:14px;padding:14px 16px;margin:-4px 0 16px}

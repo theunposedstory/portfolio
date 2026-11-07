@@ -112,6 +112,15 @@
         <section class="card" id="sec-package">
           <h3><span>3</span> Package &amp; pricing</h3>
           <div id="pkgCards" class="pkg-cards"></div>
+          <div id="customPkgBox" class="custom-pkg" hidden>
+            <p class="small muted" style="margin:0 0 10px">Build your own package: name it, set the price per day and what's included. Add-ons and extra items below are added on top.</p>
+            <div class="grid3">
+              <label>Package name<input data-k="customPkg.name" placeholder="e.g. Signature Wedding Package"></label>
+              <label>Price per day (₹) *<input data-k="customPkg.price" type="number" min="0" step="1000" inputmode="numeric" placeholder="e.g. 70000"></label>
+              <label class="private">Your cost per day (₹, private)<input data-k="customPkg.cost" type="number" min="0" step="1000" inputmode="numeric" placeholder="e.g. 40000"></label>
+            </div>
+            <label class="full" style="margin-top:12px">What's included (one per line, shown on the quotation)<textarea data-k="customPkg.inclusions" rows="4" placeholder="9 hours coverage&#10;2 candid photographers + 1 cinematographer&#10;350–400 edited photos&#10;Cinematic highlight film"></textarea></label>
+          </div>
           <div class="grid3">
             <label>Coverage days (package × days)<input data-k="days" type="number" min="1" max="10" step="1"></label>
             <label>Travel &amp; stay charged to client (₹)<input data-k="travel.charge" type="number" min="0" step="500"></label>
