@@ -37,6 +37,7 @@
       <a class="top-brand" href="#dashboard"><img src="../assets/img/logo-header.png" alt="The Unposed Story"></a>
       <nav class="tabs" aria-label="Sections">
         <a href="#dashboard" data-tab="dashboard">Dashboard</a>
+        <a href="#gallery" data-tab="gallery">Gallery</a>
         <a href="#new" data-tab="editor" class="tab-new">+ New quote</a>
       </nav>
       <div class="top-actions">
@@ -69,6 +70,46 @@
           </div>
         </div>
         <div id="quoteList" class="qlist"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- GALLERY -->
+  <main id="gallery" class="view" hidden>
+    <div class="wrap">
+      <div class="view-head">
+        <div><p class="eyebrow">Website</p><h2>Gallery</h2></div>
+        <a class="btn btn-line" href="../#work" target="_blank" rel="noopener">View on website</a>
+      </div>
+
+      <section class="card gal-upload">
+        <h3><span>1</span> Upload photos</h3>
+        <div class="grid3">
+          <label>Website section *
+            <select id="galSection">
+              <option value="">Choose a section</option>
+              <option value="wedding">Weddings</option>
+              <option value="prewedding">Pre-wedding</option>
+              <option value="haldi">Haldi</option>
+              <option value="bridal">Bridal</option>
+            </select>
+          </label>
+          <label style="grid-column:span 2">Short description (helps Google &amp; screen readers)
+            <input id="galAlt" maxlength="150" placeholder="e.g. Bride and groom at the mandap, The Lalit Thane">
+          </label>
+        </div>
+        <label class="drop" id="galDrop">
+          <input id="galFiles" type="file" accept="image/*" multiple>
+          <b>Tap to choose photos</b><span>or drag &amp; drop here · JPG / PNG · up to 20 at a time</span>
+        </label>
+        <div id="galQueue" class="gal-queue"></div>
+        <button class="btn btn-dark" id="galUploadBtn" disabled>Upload to website</button>
+        <p class="small muted" style="margin:10px 0 0">Photos are resized for fast loading, saved in your Google Drive, and appear on the website within about a minute.</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h3>On your website</h3><div class="chips" id="galChips"></div></div>
+        <div id="galGrid" class="gal-grid"></div>
       </section>
     </div>
   </main>

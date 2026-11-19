@@ -176,14 +176,15 @@ function refreshData() {
 window.addEventListener('hashchange', function () { if (S.token || DEMO) route(); });
 function route() {
   var h = location.hash.replace('#', '');
-  $$('.tabs a').forEach(function (a) { a.classList.toggle('on', (h === '' || h === 'dashboard') ? a.dataset.tab === 'dashboard' : false); });
+  $$('.tabs a').forEach(function (a) { a.classList.toggle('on', (h === '' || h === 'dashboard') ? a.dataset.tab === 'dashboard' : a.dataset.tab === h); });
+  if (h === 'gallery') { showView('gallery'); return openGallery(); }
   if (h.indexOf('q/') === 0) return openQuote(decodeURIComponent(h.slice(2)));
   if (h.indexOf('enq/') === 0) return newQuote(decodeURIComponent(h.slice(4)));
   if (h === 'new') return newQuote();
   showView('dashboard'); renderDashboard();
 }
 function showView(v) {
-  $('#dashboard').hidden = v !== 'dashboard'; $('#editor').hidden = v !== 'editor';
+  $('#dashboard').hidden = v !== 'dashboard'; $('#editor').hidden = v !== 'editor'; $('#gallery').hidden = v !== 'gallery';
   window.scrollTo(0, 0);
 }
 window.addEventListener('beforeunload', function (e) { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
@@ -925,6 +926,119 @@ function receiptPdf(receiptNo, qOther) {
   }).catch(function (e) { busy(false); console.error(e); toast('Could not create the receipt PDF.'); });
 }
 
+/* ---------------- website gallery ---------------- */
+var SECTION_LABEL = { wedding: 'Weddings', prewedding: 'Pre-wedding', haldi: 'Haldi', bridal: 'Bridal' };
+var G = { items: null, filter: 'all', queue: [] };
+function galUrl(it, w) { return it.src || ('https://lh3.googleusercontent.com/d/' + it.fileId + '=w' + (w || 600)); }
+function openGallery() {
+  renderGalleryGrid();
+  if (G.items === null) $('#galGrid').innerHTML = '<div class="empty">Loading your photos…</div>';
+  api('galleryList').then(function (r) {
+    if (!r.ok) return toast(r.error || 'Could not load gallery');
+    G.items = r.items || []; renderGalleryGrid();
+  }).catch(function () { $('#galGrid').innerHTML = '<div class="empty">Couldn’t reach Google. If you just updated the script, deploy a New version and allow Google Drive access.</div>'; });
+}
+function renderGalleryGrid() {
+  var items = G.items || [];
+  var chips = [['all', 'All']].concat(Object.keys(SECTION_LABEL).map(function (k) { return [k, SECTION_LABEL[k]]; }));
+  $('#galChips').innerHTML = chips.map(function (c) {
+    var n = c[0] === 'all' ? items.length : items.filter(function (x) { return x.section === c[0]; }).length;
+    return '<button class="chip' + (G.filter === c[0] ? ' on' : '') + '" data-gf="' + c[0] + '">' + c[1] + ' (' + n + ')</button>';
+  }).join('');
+  $$('#galChips [data-gf]').forEach(function (b) { b.onclick = function () { G.filter = b.dataset.gf; renderGalleryGrid(); }; });
+  if (G.items === null) return;
+  var list = items.filter(function (x) { return G.filter === 'all' || x.section === G.filter; });
+  $('#galGrid').innerHTML = list.length ? list.map(function (it) {
+    return '<figure class="gcard' + (it.visible ? '' : ' hid') + '" data-id="' + esc(it.id) + '">' +
+      '<img src="' + esc(galUrl(it, 500)) + '" alt="' + esc(it.alt) + '" loading="lazy" referrerpolicy="no-referrer">' +
+      (it.visible ? '' : '<span class="gbadge">Hidden</span>') +
+      '<figcaption><select data-g="section" aria-label="Section">' + Object.keys(SECTION_LABEL).map(function (k) { return '<option value="' + k + '"' + (k === it.section ? ' selected' : '') + '>' + SECTION_LABEL[k] + '</option>'; }).join('') + '</select>' +
+      '<input data-g="alt" value="' + esc(it.alt) + '" placeholder="Description" aria-label="Description">' +
+      '<div class="gacts"><button class="btn btn-line" data-g="vis">' + (it.visible ? 'Hide' : 'Show') + '</button><button class="btn btn-line gdel" data-g="del">Delete</button></div></figcaption></figure>';
+  }).join('') : '<div class="empty">' + (items.length ? 'No photos in this section yet.' : 'No uploaded photos yet. Your existing website photos stay as they are; uploads appear first in each section.') + '</div>';
+  $$('#galGrid .gcard').forEach(function (card) {
+    var it = items.filter(function (x) { return x.id === card.dataset.id; })[0];
+    var upd = function (patch, okMsg) {
+      api('updateImage', Object.assign({ id: it.id }, patch)).then(function (r) {
+        if (!r.ok) return toast(r.error || 'Could not update');
+        Object.assign(it, patch); renderGalleryGrid(); if (okMsg) toast(okMsg);
+      });
+    };
+    $('[data-g="section"]', card).onchange = function (e) { upd({ section: e.target.value }, 'Moved to ' + SECTION_LABEL[e.target.value]); };
+    $('[data-g="alt"]', card).onchange = function (e) { upd({ alt: e.target.value }, 'Description saved'); };
+    $('[data-g="vis"]', card).onclick = function () { upd({ visible: !it.visible }, it.visible ? 'Hidden from website' : 'Showing on website'); };
+    $('[data-g="del"]', card).onclick = function () {
+      if (!confirm('Delete this photo from the website? It goes to your Google Drive bin for 30 days.')) return;
+      api('deleteImage', { id: it.id }).then(function (r) {
+        if (!r.ok) return toast(r.error || 'Could not delete');
+        G.items = G.items.filter(function (x) { return x.id !== it.id; }); renderGalleryGrid(); toast('Photo deleted');
+      });
+    };
+  });
+}
+/* resize in the browser before upload: fast uploads, fast website */
+function resizeImage(file, max) {
+  return new Promise(function (res, rej) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      var w = img.naturalWidth, h = img.naturalHeight, sc = Math.min(1, max / Math.max(w, h));
+      var c = document.createElement('canvas'); c.width = Math.round(w * sc); c.height = Math.round(h * sc);
+      var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      var dataUrl = c.toDataURL('image/jpeg', 0.86);
+      res({ data: dataUrl.split(',')[1], preview: c.width > 400 ? (function () { var t = document.createElement('canvas'), s2 = 400 / c.width; t.width = 400; t.height = Math.round(c.height * s2); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height); return t.toDataURL('image/jpeg', 0.8); })() : dataUrl, w: c.width, h: c.height });
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('This file type can’t be read. Use JPG or PNG.')); };
+    img.src = url;
+  });
+}
+function galPick(files) {
+  var add = [].slice.call(files || []).filter(function (f) { return /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name); }).slice(0, 20);
+  add.forEach(function (f) { G.queue.push({ file: f, status: 'ready', url: URL.createObjectURL(f) }); });
+  renderQueue();
+}
+function renderQueue() {
+  $('#galQueue').innerHTML = G.queue.map(function (q, i) {
+    return '<div class="qitem st-' + q.status + '"><img src="' + q.url + '" alt=""><span>' + esc(q.file.name) + '</span><b>' +
+      ({ ready: 'Ready', resizing: 'Resizing…', uploading: 'Uploading…', done: '✓ Uploaded', error: '⚠ ' + esc(q.err || 'Failed') })[q.status] + '</b>' +
+      (q.status === 'ready' || q.status === 'error' ? '<button class="x" data-rm="' + i + '" aria-label="Remove">×</button>' : '') + '</div>';
+  }).join('');
+  $$('#galQueue [data-rm]').forEach(function (b) { b.onclick = function () { G.queue.splice(+b.dataset.rm, 1); renderQueue(); }; });
+  $('#galUploadBtn').disabled = !G.queue.some(function (q) { return q.status === 'ready' || q.status === 'error'; });
+  var pending = G.queue.filter(function (q) { return q.status === 'ready' || q.status === 'error'; }).length;
+  $('#galUploadBtn').textContent = pending ? 'Upload ' + pending + ' photo' + (pending > 1 ? 's' : '') + ' to website' : 'Upload to website';
+}
+$('#galFiles').addEventListener('change', function (e) { galPick(e.target.files); e.target.value = ''; });
+['dragover', 'dragenter'].forEach(function (ev) { $('#galDrop').addEventListener(ev, function (e) { e.preventDefault(); $('#galDrop').classList.add('over'); }); });
+['dragleave', 'drop'].forEach(function (ev) { $('#galDrop').addEventListener(ev, function (e) { e.preventDefault(); $('#galDrop').classList.remove('over'); }); });
+$('#galDrop').addEventListener('drop', function (e) { galPick(e.dataTransfer.files); });
+$('#galUploadBtn').onclick = function () {
+  var section = $('#galSection').value;
+  if (!section) { toast('Choose the website section first'); $('#galSection').focus(); return; }
+  var alt = $('#galAlt').value.trim(), todo = G.queue.filter(function (q) { return q.status === 'ready' || q.status === 'error'; });
+  var btn = $('#galUploadBtn'); btn.disabled = true;
+  var n = 0, chain = Promise.resolve();
+  todo.forEach(function (q, i) {
+    chain = chain.then(function () {
+      q.status = 'resizing'; renderQueue();
+      return resizeImage(q.file, 2000).then(function (r) {
+        q.status = 'uploading'; renderQueue();
+        var desc = alt ? (todo.length > 1 ? alt + ' (' + (i + 1) + ')' : alt) : SECTION_LABEL[section] + ' — The Unposed Story';
+        return api('uploadImage', { section: section, alt: desc, data: r.data, mime: 'image/jpeg', name: q.file.name.replace(/\.[^.]+$/, ''), w: r.w, h: r.h })
+          .then(function (res) {
+            if (!res.ok) throw new Error(res.error || 'Upload failed');
+            if (DEMO) res.item.src = r.preview;
+            q.status = 'done'; n++; G.items = [res.item].concat(G.items || []); renderQueue(); renderGalleryGrid();
+          });
+      }).catch(function (e) { q.status = 'error'; q.err = e.message === 'expired' ? 'Session expired' : (e.message || 'Failed'); renderQueue(); });
+    });
+  });
+  chain.then(function () {
+    btn.disabled = false; toast(n + ' photo' + (n === 1 ? '' : 's') + ' added to ' + SECTION_LABEL[section], 3500);
+    setTimeout(function () { G.queue = G.queue.filter(function (q) { return q.status !== 'done'; }); renderQueue(); }, 2500);
+  });
+};
+
 /* ---------------- demo backend (for ?demo=1 previews) ---------------- */
 var Demo = (function () {
   var prices = [
@@ -944,7 +1058,7 @@ var Demo = (function () {
     { ref: 'TUS-482913', status: 'New', name: 'Priya Sharma', partner: 'Rohan Mehta', phone: '+91 98200 12345', email: 'priya@example.com', date: '2027-02-14', location: 'Thane, The Lalit', package: 'Gold', guests: '200–500', message: 'Haldi, sangeet and wedding over 3 days.' },
     { ref: 'TUS-377120', status: 'Contacted', name: 'Sneha Patil', partner: 'Amit Joshi', phone: '9867012345', email: '', date: '2026-12-20', location: 'Pune', package: 'Silver', guests: '100–200', message: '' }
   ];
-  var store = {}, seq = 0, rseq = 0;
+  var store = {}, seq = 0, rseq = 0, gal = [];
   function summary(q) { var t = q.totals || {}; var paid = (q.payments || []).filter(function (p) { return p.status !== 'Void'; }).reduce(function (s, p) { return s + p.amount; }, 0);
     return { no: q.no, created: q._created, status: q.status, ref: q.ref, client: q.client.name, partner: q.client.partner, phone: q.client.phone, date: q.client.date, venue: q.client.venue, budget: num(q.budget), final: t.final, cost: t.cost, profit: t.profit, margin: t.margin, paid: paid, balance: t.final - paid }; }
   function call(a, d) {
@@ -954,6 +1068,10 @@ var Demo = (function () {
     if (a === 'getQuote') return store[d.id] ? { ok: true, quote: clone(store[d.id]) } : { ok: false, error: 'Not found' };
     if (a === 'setStatus') { if (store[d.id]) store[d.id].status = d.status; return { ok: true }; }
     if (a === 'addPayment') { var s = store[d.id]; var p = Object.assign({ receiptNo: 'R-2026-' + ('00' + (++rseq)).slice(-3), status: 'Valid' }, d.payment); p.amount = num(p.amount); s.payments.push(p); if (['Draft', 'Sent', 'Negotiating'].indexOf(s.status) >= 0) s.status = 'Accepted'; return { ok: true, payment: p, payments: clone(s.payments), status: s.status }; }
+    if (a === 'galleryList') return { ok: true, items: gal.slice() };
+    if (a === 'uploadImage') { var it = { id: 'IMG-DEMO-' + (gal.length + 1), uploaded: new Date().toISOString(), section: d.section, alt: d.alt, visible: true, fileId: 'demo', w: d.w, h: d.h }; gal.unshift(it); return { ok: true, item: clone(it) }; }
+    if (a === 'updateImage') { gal.forEach(function (x) { if (x.id === d.id) { if (d.section != null) x.section = d.section; if (d.alt != null) x.alt = d.alt; if (d.visible != null) x.visible = d.visible; } }); return { ok: true }; }
+    if (a === 'deleteImage') { gal = gal.filter(function (x) { return x.id !== d.id; }); return { ok: true }; }
     if (a === 'voidPayment') { var s2 = store[d.id]; s2.payments.forEach(function (p) { if (p.receiptNo === d.receiptNo) p.status = 'Void'; }); return { ok: true, payments: clone(s2.payments) }; }
     return { ok: false, error: 'demo' };
   }

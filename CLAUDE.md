@@ -75,6 +75,18 @@ Open business point: drone add-on (₹5K) undercuts Gold — suggested ~₹12K.
 - Private profit view: costs from Price list + extra costs; target margin 35% (TARGET_MARGIN in app.js).
 - Service areas (from owner's template): Mumbai, Thane, Navi Mumbai, Pune, pan-India, destination.
 
+## Website gallery uploads (added Nov 2026)
+- Private **Gallery** tab in the quote builder (`/quote/#gallery`, same PIN). Choose section
+  (wedding / prewedding / haldi / bridal) + description, upload up to 20 photos; resized in the
+  browser to max 2000px JPEG before upload.
+- Backend (`Code.gs`): actions galleryList, uploadImage, updateImage, deleteImage (PIN token);
+  public `GET ?action=gallery` returns visible items. Files saved in the owner's Drive folder
+  "The Unposed Story – Website Gallery" (shared "anyone with link → view"); rows in the **Gallery** sheet tab.
+  Delete = Drive bin (30 days). Run `setupGallery()` once after deploying (grants Drive scope).
+- Website (`assets/site.js`): fetches the gallery list (cached in localStorage `tus_gal`), adds uploads
+  first in each tab via `https://lh3.googleusercontent.com/d/<fileId>=w<size>`; filter tabs + lightbox
+  work for built-in and uploaded photos. Built-in photos in `index.html` stay as the SEO baseline.
+
 ## Hosting / deploy
 - GitHub Pages from `main` of `theunposedstory/portfolio`
   → https://theunposedstory.github.io/portfolio/

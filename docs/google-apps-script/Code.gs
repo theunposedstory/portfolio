@@ -6,6 +6,8 @@
  * 2) Quotation builder  -> "Quotations", "Price list", "Payments" tabs (action: login,
  *                          bootstrap, saveQuote, getQuote, setStatus, changePin,
  *                          addPayment, voidPayment)
+ * 3) Website gallery    -> "Gallery" tab + Drive folder (action: galleryList, uploadImage,
+ *                          updateImage, deleteImage; public GET ?action=gallery)
  *
  * After pasting a new version: Deploy > Manage deployments > edit (pencil) >
  * Version: New version > Deploy. The web app URL stays the same.
@@ -60,8 +62,10 @@ function doPost(e) {
   }
 }
 
-function doGet() {
-  return json_({ ok: true, service: 'The Unposed Story enquiries + quotations' });
+function doGet(e) {
+  var p = (e && e.parameter) || {};
+  if (p.action === 'gallery') return json_(publicGallery_());     // public: website gallery
+  return json_({ ok: true, service: 'The Unposed Story enquiries + quotations + gallery' });
 }
 
 /* ======================= 1) Website enquiries ======================= */
@@ -135,6 +139,10 @@ function handleAction_(d) {
     case 'changePin': auth_(d); return changePin_(d.newPin);
     case 'addPayment':  auth_(d); return addPayment_(d.id, d.payment || {});
     case 'voidPayment': auth_(d); return voidPayment_(d.id, d.receiptNo);
+    case 'galleryList': auth_(d); return galleryList_();
+    case 'uploadImage': auth_(d); return uploadImage_(d);
+    case 'updateImage': auth_(d); return updateImage_(d);
+    case 'deleteImage': auth_(d); return deleteImage_(d.id);
     default: return { ok: false, error: 'Unknown action' };
   }
 }
@@ -315,6 +323,82 @@ function nextReceiptNo_(ps) {
   });
   return 'R-' + year + '-' + ('00' + (max + 1)).slice(-3);
 }
+/* ======================= 3) Website gallery ======================= */
+var GALLERY_SHEET = 'Gallery';
+var GALLERY_HEADERS = ['ID', 'Uploaded', 'Section', 'Description (alt text)', 'Visible', 'Drive file ID', 'Width', 'Height', 'File name', 'Preview'];
+var GALLERY_SECTIONS = ['wedding', 'prewedding', 'haldi', 'bridal'];
+var GALLERY_FOLDER = 'The Unposed Story – Website Gallery';
+
+function getGallerySheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(GALLERY_SHEET) || ss.insertSheet(GALLERY_SHEET);
+  if (sh.getLastRow() === 0) {
+    headerRow_(sh, GALLERY_HEADERS, [110, 150, 110, 300, 80, 280, 70, 70, 220, 120]);
+    sh.getRange('B:B').setNumberFormat('dd mmm yyyy, h:mm am/pm');
+  }
+  return sh;
+}
+function galleryFolder_() {
+  var props = PropertiesService.getScriptProperties(), id = props.getProperty('GALLERY_FOLDER_ID');
+  if (id) { try { var f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (x) {} }
+  var it = DriveApp.getFoldersByName(GALLERY_FOLDER);
+  var folder = it.hasNext() ? it.next() : DriveApp.createFolder(GALLERY_FOLDER);
+  props.setProperty('GALLERY_FOLDER_ID', folder.getId());
+  return folder;
+}
+function galleryRows_() {
+  var sh = getGallerySheet_();
+  if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 9).getValues().map(function (r, i) {
+    return { row: i + 2, id: String(r[0]), uploaded: iso_(r[1]), section: String(r[2]), alt: String(r[3]),
+             visible: String(r[4]).toLowerCase() !== 'no', fileId: String(r[5]), w: Number(r[6]) || 0, h: Number(r[7]) || 0, name: String(r[8]) };
+  }).filter(function (x) { return x.id && x.fileId; });
+}
+function publicGallery_() {
+  var items = galleryRows_().filter(function (x) { return x.visible && GALLERY_SECTIONS.indexOf(x.section) >= 0; })
+    .reverse().map(function (x) { return { id: x.id, section: x.section, alt: x.alt, fileId: x.fileId, w: x.w, h: x.h }; });
+  return { ok: true, items: items };
+}
+function galleryList_() {
+  return { ok: true, items: galleryRows_().reverse().map(function (x) { delete x.row; return x; }), sections: GALLERY_SECTIONS };
+}
+function uploadImage_(d) {
+  var section = String(d.section || '');
+  if (GALLERY_SECTIONS.indexOf(section) < 0) return { ok: false, error: 'Choose a section' };
+  if (!d.data) return { ok: false, error: 'No image received' };
+  var mime = /^image\/(jpeg|png|webp)$/.test(d.mime) ? d.mime : 'image/jpeg';
+  var bytes = Utilities.base64Decode(String(d.data));
+  if (bytes.length > 8 * 1024 * 1024) return { ok: false, error: 'Image too large (max 8 MB after resizing)' };
+  var id = 'IMG-' + Utilities.formatDate(new Date(), TIMEZONE, 'yyMMdd') + '-' + Utilities.getUuid().slice(0, 6);
+  var name = id + '-' + String(d.name || 'photo').replace(/[^\w\-]+/g, '-').slice(0, 40) + (mime === 'image/png' ? '.png' : mime === 'image/webp' ? '.webp' : '.jpg');
+  var file = galleryFolder_().createFile(Utilities.newBlob(bytes, mime, name));
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);   // needed for the public website
+  file.setDescription('The Unposed Story website gallery · ' + section + ' · ' + clean_(d.alt, 200));
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var sh = getGallerySheet_();
+    sh.appendRow([id, new Date(), section, clean_(d.alt, 200), 'Yes', file.getId(), num_(d.w), num_(d.h), name,
+                  '=IMAGE("https://lh3.googleusercontent.com/d/' + file.getId() + '=w200")']);
+  } finally { lock.releaseLock(); }
+  return { ok: true, item: { id: id, uploaded: new Date().toISOString(), section: section, alt: clean_(d.alt, 200), visible: true, fileId: file.getId(), w: num_(d.w), h: num_(d.h), name: name } };
+}
+function updateImage_(d) {
+  var hit = galleryRows_().filter(function (x) { return x.id === d.id; })[0];
+  if (!hit) return { ok: false, error: 'Photo not found' };
+  var sh = getGallerySheet_();
+  if (d.section != null) { if (GALLERY_SECTIONS.indexOf(d.section) < 0) return { ok: false, error: 'Bad section' }; sh.getRange(hit.row, 3).setValue(d.section); }
+  if (d.alt != null) sh.getRange(hit.row, 4).setValue(clean_(d.alt, 200));
+  if (d.visible != null) sh.getRange(hit.row, 5).setValue(d.visible ? 'Yes' : 'No');
+  return { ok: true };
+}
+function deleteImage_(id) {
+  var hit = galleryRows_().filter(function (x) { return x.id === id; })[0];
+  if (!hit) return { ok: false, error: 'Photo not found' };
+  try { DriveApp.getFileById(hit.fileId).setTrashed(true); } catch (x) {}   // moves to Drive bin (recoverable for 30 days)
+  getGallerySheet_().deleteRow(hit.row);
+  return { ok: true };
+}
+
 function getPaySheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(PAY_SHEET) || ss.insertSheet(PAY_SHEET);
@@ -436,11 +520,14 @@ function statusColours_(sh, col, list, colours) {
 
 /** Run once from the editor: creates all tabs and sends a test enquiry email. */
 function setupAndTest() {
-  getSheet_(); getQuoteSheet_(); getPriceSheet_(); getPaySheet_();
+  getSheet_(); getQuoteSheet_(); getPriceSheet_(); getPaySheet_(); getGallerySheet_(); galleryFolder_();
   handleEnquiry_({ ref: 'TEST-' + String(Date.now()).slice(-4), name: 'Test Couple', partner: 'Partner', phone: '+91 70452 78377',
     email: NOTIFY_EMAIL, date: '2027-02-14', location: 'Mumbai', package: 'Gold', guests: '200–500',
     message: 'This is a test enquiry. You can delete this row.', source: 'Setup test' });
 }
+
+/** Run ONCE after pasting this version: creates the Gallery tab + Drive folder and asks for Drive permission. */
+function setupGallery() { getGallerySheet_(); galleryFolder_(); }
 
 /** Run from the editor if you forget your quotation PIN (the next PIN you enter becomes the new one). */
 function resetQuotePin() { PropertiesService.getScriptProperties().deleteProperty('QUOTE_PIN_HASH'); }
