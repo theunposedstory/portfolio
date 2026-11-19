@@ -519,7 +519,7 @@ function recalc() {
     chip.className = 'gap-chip ' + (t.gap > 0 ? 'over' : 'under'); chip.textContent = t.gap > 0 ? '+' + inr(t.gap) : t.gap < 0 ? inr(t.gap) : '=';
   } else { bb.innerHTML = ''; bb.className = 'budget'; chip.textContent = ''; chip.className = 'gap-chip'; }
 
-  var m = t.margin, col = m >= TARGET_MARGIN ? '#1F7A4D' : m >= 20 ? '#B8893E' : '#B3261E';
+  var m = t.margin, col = m >= TARGET_MARGIN ? '#1F7A4D' : m >= 20 ? '#A88B4A' : '#B3261E';
   $('#profitBox').innerHTML = t.final ? '<div class="row"><span>Your cost</span><span>' + inr(t.totalCost) + '</span></div><div class="row"><span>Profit</span><b style="color:' + col + '">' + inr(t.profit) + ' · ' + m.toFixed(1) + '%</b></div>' +
     '<div class="meter"><i style="width:' + Math.max(0, Math.min(100, m)) + '%;background:' + col + '"></i></div><div class="small muted" style="margin-top:4px">Private · target ' + TARGET_MARGIN + '% margin</div>' : '';
 
@@ -695,37 +695,37 @@ function makePdf(html, filename, footerText) {
 
 var PDF_CSS = '<style>' +
   '.pdoc{width:718px;font-family:Manrope,Arial,sans-serif;color:#1E1A17;font-size:12.5px;line-height:1.5;background:#fff}' +
-  '.pdoc h1{font:600 24px "Cormorant Garamond",Georgia,serif;color:#8B1230;margin:16px 0 2px;text-align:center;letter-spacing:.02em}' +
-  '.pdoc .tag{text-align:center;color:#B8893E;font-style:italic;margin:0 0 14px}' +
-  '.pdoc .band{background:#8B1230;border-radius:12px;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;color:#F3E3C0}' +
-  '.pdoc .band img{height:84px}' +
+  '.pdoc h1{font:600 24px "Cormorant Garamond",Georgia,serif;color:#3D4724;margin:16px 0 2px;text-align:center;letter-spacing:.02em}' +
+  '.pdoc .tag{text-align:center;color:#A88B4A;font-style:italic;margin:0 0 14px}' +
+  '.pdoc .band{background:#3D4724;border-radius:12px;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;color:#F1EEDF}' +
+  '.pdoc .band img{height:62px}' +
   '.pdoc .band .meta{text-align:right;font-size:11.5px;line-height:1.7}.pdoc .band .meta b{display:block;font:600 22px "Cormorant Garamond",Georgia,serif;color:#fff;letter-spacing:.06em}' +
   '.pdoc .two{display:flex;gap:16px;background:#F7F2EA;border-radius:10px;padding:14px 18px;margin:12px 0 4px}' +
   '.pdoc .two>div{flex:1}.pdoc .two .r{text-align:right}' +
   '.pdoc .lbl{font:700 9.5px Manrope,Arial;letter-spacing:.14em;text-transform:uppercase;color:#7A6F64;margin:0 0 3px}' +
-  '.pdoc .big{font:600 17px "Cormorant Garamond",Georgia,serif;color:#8B1230;margin:0}' +
-  '.pdoc h2{font:700 12px Manrope,Arial;letter-spacing:.12em;text-transform:uppercase;color:#8B1230;margin:15px 0 7px;padding-bottom:5px;border-bottom:1.5px solid #E2C27A}' +
-  '.pdoc h3{font:700 11px Manrope,Arial;color:#8B1230;margin:10px 0 4px;letter-spacing:.06em;text-transform:uppercase}' +
+  '.pdoc .big{font:600 17px "Cormorant Garamond",Georgia,serif;color:#3D4724;margin:0}' +
+  '.pdoc h2{font:700 12px Manrope,Arial;letter-spacing:.12em;text-transform:uppercase;color:#3D4724;margin:15px 0 7px;padding-bottom:5px;border-bottom:1.5px solid #D6C38F}' +
+  '.pdoc h3{font:700 11px Manrope,Arial;color:#3D4724;margin:10px 0 4px;letter-spacing:.06em;text-transform:uppercase}' +
   '.pdoc table{width:100%;border-collapse:collapse}' +
-  '.pdoc th{background:#8B1230;color:#fff;font:700 10.5px Manrope,Arial;text-align:left;padding:8px 10px;letter-spacing:.04em}' +
+  '.pdoc th{background:#3D4724;color:#fff;font:700 10.5px Manrope,Arial;text-align:left;padding:8px 10px;letter-spacing:.04em}' +
   '.pdoc td{padding:6px 10px;border-bottom:1px solid #EFE6D8;vertical-align:top}' +
   '.pdoc .num{text-align:right;white-space:nowrap}' +
-  '.pdoc tr.tot td{background:#F7F2EA;font-weight:700;color:#8B1230;font-size:14px;border-bottom:0}' +
+  '.pdoc tr.tot td{background:#F7F2EA;font-weight:700;color:#3D4724;font-size:14px;border-bottom:0}' +
   '.pdoc tr.sub td{font-weight:700}.pdoc tr.disc td{color:#1F7A4D}' +
   '.pdoc ul{margin:2px 0 6px;padding-left:18px}.pdoc li{margin:2px 0}' +
   '.pdoc .cols{display:flex;gap:18px}.pdoc .cols>div{flex:1}' +
   '.pdoc ol{margin:4px 0;padding-left:18px}.pdoc ol li{margin:3px 0;font-size:11.5px}' +
-  '.pdoc .note{background:#FFF9EE;border-left:3px solid #B8893E;padding:8px 12px;border-radius:6px;margin:10px 0}' +
+  '.pdoc .note{background:#FFF9EE;border-left:3px solid #A88B4A;padding:8px 12px;border-radius:6px;margin:10px 0}' +
   '.pdoc .sigs{display:flex;gap:40px;margin-top:10px}.pdoc .sig{flex:1}.pdoc .sig .line{border-bottom:1px solid #1E1A17;height:40px;margin-bottom:6px}' +
   '.pdoc .foot{text-align:center;margin-top:16px;padding-top:10px;border-top:1px solid #EFE6D8;font-size:11px;color:#4A423B}' +
-  '.pdoc .foot b{color:#8B1230;display:block;font-size:12px;letter-spacing:.08em}' +
+  '.pdoc .foot b{color:#3D4724;display:block;font-size:12px;letter-spacing:.08em}' +
   '.pdoc .muted{color:#7A6F64}.pdoc .avoid{page-break-inside:avoid;break-inside:avoid}' +
-  '.pdoc .amtbox{background:#F7F2EA;border:1.5px solid #E2C27A;border-radius:12px;padding:16px 20px;text-align:center;margin:14px 0}' +
-  '.pdoc .amtbox b{display:block;font:600 34px "Cormorant Garamond",Georgia,serif;color:#8B1230}' +
+  '.pdoc .amtbox{background:#F7F2EA;border:1.5px solid #D6C38F;border-radius:12px;padding:16px 20px;text-align:center;margin:14px 0}' +
+  '.pdoc .amtbox b{display:block;font:600 34px "Cormorant Garamond",Georgia,serif;color:#3D4724}' +
   '.pdoc .stamp{display:inline-block;border:2px solid #1F7A4D;color:#1F7A4D;border-radius:8px;padding:4px 12px;font:700 12px Manrope,Arial;letter-spacing:.14em;transform:rotate(-4deg)}' +
   '</style>';
 function band(title, metaRows) {
-  return '<div class="band avoid"><img src="../assets/img/logo.png" alt=""><div class="meta"><b>' + esc(title) + '</b>' + metaRows.map(function (r) { return esc(r[0]) + ': <strong>' + esc(r[1]) + '</strong>'; }).join('<br>') + '</div></div>';
+  return '<div class="band avoid"><img src="../assets/img/logo-header-cream.png" alt=""><div class="meta"><b>' + esc(title) + '</b>' + metaRows.map(function (r) { return esc(r[0]) + ': <strong>' + esc(r[1]) + '</strong>'; }).join('<br>') + '</div></div>';
 }
 function footerBlock() {
   return '<div class="foot avoid"><b>THE UNPOSED STORY</b>Candid Photography • Cinematic Videography • Traditional Documentation<br><span class="muted">' + esc(BRAND.areas) + '</span><br>' +

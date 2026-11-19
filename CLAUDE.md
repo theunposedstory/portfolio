@@ -14,8 +14,10 @@ November 2026 redesign so future work keeps them (or changes them on purpose).
   "100% happy couples", "76 reviews" next to "50+ weddings", or a Clutch badge
   (removed as credibility problems).
 - Old brand name "Varmala Frames" must not appear anywhere.
-- Logo file contains a typo: "Cinematic **Flims**". Header logo crop excludes
-  that line; footer shows the full logo. Swap in a corrected logo when available.
+- Logo (Nov 2026 rebrand): olive "US" monogram + "THE UNPOSED STORY" + "Wedding Photography &
+  Cinematic Films" (spelling now correct). Source 2000px on cream. Files in assets/img: logo.png
+  (olive, full), logo-cream.png (footer/PDF), logo-header(.png|-cream.png) (monogram + name),
+  logo-emblem.png, favicons (olive square, cream monogram). The old maroon/gold logo is retired.
 
 ## Packages (owner chose "Starting from" display)
 | Tier | Price | Shown on site as |
@@ -29,9 +31,10 @@ Open business point: drone add-on (₹5K) undercuts Gold — suggested ~₹12K.
 
 ## Design decisions
 - Direction: **Editorial Luxury** — ivory `#F7F2EA` body, ink `#1E1A17`,
-  gold `#B8893E`, brand maroon `#8B1230` (from logo) for header, footer, CTA band.
+  brass `#A88B4A`, brand olive `#3D4724` (from the Nov 2026 logo) for buttons, footer, CTA band,
+  builder top bar and PDF bands. (Was maroon `#8B1230` + gold before the rebrand.)
 - Fonts: Cinzel (brand), Cormorant Garamond (headings), Manrope (body).
-- Header is maroon so the exact gold logo stays legible (gold on ivory was too pale).
+- Header is ivory with the olive logo exactly as designed.
 - Mobile kept deliberately calm: single hero photo (no badge/inset), sticky
   bottom bar Call | WhatsApp | Check date, swipeable packages, 44px+ tap targets.
 - Removed from old site: COCO AI widget (asked visitors for API keys),
