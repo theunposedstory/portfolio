@@ -41,6 +41,8 @@
   function escA(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function renderUploads(items){
     if(!gallery||!items)return;
+    var only=(gallery.dataset.only||'').split(',').filter(Boolean);   // service pages show their own sections only
+    if(only.length)items=items.filter(function(it){return only.indexOf(it.section)>=0;});
     gallery.querySelectorAll('.g-item.up').forEach(function(el){el.remove();});
     var html=items.filter(function(it){return LABEL[it.section]&&it.fileId;}).map(function(it){
       var w=it.w||1200,h=it.h||1500;

@@ -409,3 +409,19 @@ button,input,select,textarea{font:inherit;color:inherit}
 .form-done .fine a{color:var(--ink);text-decoration:underline}
 .form-done .fine a{white-space:nowrap}
 .hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}
+/* Service pages */
+.crumbs{padding-top:18px;font:500 12.5px var(--sans);color:var(--muted)}
+.crumbs a{color:var(--ink-2);border-bottom:1px solid var(--line)}.crumbs a:hover{color:var(--wine)}
+.crumbs span{margin:0 6px}.crumbs [aria-current]{margin:0;color:var(--ink)}
+.incl{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.incl-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:24px 22px;border-top:3px solid var(--wine)}
+.incl-card h3{font:500 23px/1.2 var(--serif);margin:0 0 8px}
+.incl-card p{margin:0;font-size:14.5px;color:var(--ink-2)}
+.rel{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.rel-card{display:flex;flex-direction:column;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:22px;transition:transform .35s var(--ease),box-shadow .35s}
+.rel-card:hover{transform:translateY(-4px);box-shadow:0 24px 50px -34px rgba(30,36,18,.45)}
+.rel-card b{font:500 24px/1.15 var(--serif)}.rel-card span{font-size:13.5px;color:var(--muted)}
+.rel-card b::after{content:" →";color:var(--gold-d)}
+.cta .contact-list a{align-items:center}
+@media (max-width:1080px){.incl{grid-template-columns:1fr 1fr}.rel{grid-template-columns:1fr}}
+@media (max-width:720px){.incl{grid-template-columns:1fr;gap:10px}.incl-card{padding:18px}.incl-card h3{font-size:20px}.crumbs{padding-top:12px}}
