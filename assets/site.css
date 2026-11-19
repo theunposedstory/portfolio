@@ -1,8 +1,8 @@
 /* The Unposed Story — Editorial Luxury design system */
 :root{
   --ivory:#F7F2EA; --paper:#FBF8F3; --sand:#EFE6D8; --line:#E2D6C3;
-  --ink:#1E1A17; --ink-2:#4A423B; --muted:#7A6F64;
-  --gold:#A88B4A; --gold-d:#7D6630; --wine:#3D4724; --wine-d:#2B3319;
+  --ink:#1E1A17; --ink-2:#4A423B; --muted:#675D53;
+  --gold:#A88B4A; --gold-d:#6B5626; --wine:#3D4724; --wine-d:#2B3319;
   --brand:'Cormorant Garamond',Georgia,serif;
   --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
   --sans:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -230,7 +230,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .ftr{background:var(--ink);color:#CFC4B6;padding:80px 0 120px;font-size:14.5px}
 .ftr-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:40px}
 .ftr .brand b{color:var(--ivory)}
-.ftr h4{font:600 10px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin:0 0 18px}
+.ftr h4,.ftr .ftr-h{font:600 10px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin:0 0 18px}
 .ftr ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .ftr a:hover{color:var(--ivory)}
 .ftr address{font-style:normal;line-height:1.8}
@@ -425,3 +425,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .cta .contact-list a{align-items:center}
 @media (max-width:1080px){.incl{grid-template-columns:1fr 1fr}.rel{grid-template-columns:1fr}}
 @media (max-width:720px){.incl{grid-template-columns:1fr;gap:10px}.incl-card{padding:18px}.incl-card h3{font-size:20px}.crumbs{padding-top:12px}}
+
+/* Accessibility: AA contrast for tags; gallery photos open via a real button */
+.pk .tag{background:var(--wine);color:#fff}
+.g-open{position:absolute;inset:0;z-index:1;background:transparent;border:0;padding:0;cursor:zoom-in;border-radius:inherit}
+.g-open:focus-visible{outline:3px solid var(--wine);outline-offset:-3px}
+.g-item figcaption{pointer-events:none}
+
+.ftr .ftr-h{color:#D6C38F}
+@media (max-width:720px){.ftr .ftr-h{font-size:11px}}

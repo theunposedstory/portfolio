@@ -98,6 +98,15 @@ Open business point: drone add-on (₹5K) undercuts Gold — suggested ~₹12K.
 - Each page's `.gallery[data-only]` shows built-in photos of its section(s) + uploads for those sections.
 - Homepage service cards and footer "Services" link to these pages; all are in `sitemap.xml`.
 
+## Speed, accessibility & AI files (Nov 2026)
+- PageSpeed (live): desktop 100/97/100/100, mobile 88 before tuning; local Lighthouse after tuning:
+  mobile perf 97–99, accessibility 100, SEO 100. Hero has a 720w variant + preload with imagesrcset.
+- Gallery photos open via an injected `<button class="g-open">` (no role=button on <figure>).
+- Contrast: --muted #675D53, --gold-d #6B5626 (AA on ivory/sand). Footer headings are h3.ftr-h.
+- `llms.txt` at the site root folder: plain-language business summary for AI assistants. Keep facts in
+  sync with prices/services. (Lighthouse checks llms.txt at the domain root, which on github.io is
+  outside this repo; it will count once the site moves to its own domain.)
+
 ## Hosting / deploy
 - GitHub Pages from `main` of `theunposedstory/portfolio`
   → https://theunposedstory.github.io/portfolio/
