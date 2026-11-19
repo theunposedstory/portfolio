@@ -46,7 +46,7 @@
     gallery.querySelectorAll('.g-item.up').forEach(function(el){el.remove();});
     var html=items.filter(function(it){return LABEL[it.section]&&it.fileId;}).map(function(it){
       var w=it.w||1200,h=it.h||1500;
-      return '<figure class="g-item up" data-cat="'+escA(it.section)+'"><img src="'+driveImg(it.fileId,640)+'" srcset="'+driveImg(it.fileId,640)+' 640w, '+driveImg(it.fileId,1400)+' 1400w" sizes="(max-width:720px) 50vw, 33vw" data-full="'+driveImg(it.fileId,1800)+'" width="'+w+'" height="'+h+'" alt="'+escA(it.alt)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.closest(\'.g-item\').remove()"><figcaption><small>'+LABEL[it.section]+'</small>'+escA(it.alt)+'</figcaption></figure>';
+      return '<figure class="g-item up" data-cat="'+escA(it.section)+'"><img src="'+driveImg(it.fileId,640)+'" srcset="'+driveImg(it.fileId,360)+' 360w, '+driveImg(it.fileId,640)+' 640w, '+driveImg(it.fileId,1400)+' 1400w" sizes="(max-width:720px) 50vw, 33vw" data-full="'+driveImg(it.fileId,1800)+'" width="'+w+'" height="'+h+'" alt="'+escA(it.alt)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.closest(\'.g-item\').remove()"><figcaption><small>'+LABEL[it.section]+'</small>'+escA(it.alt)+'</figcaption></figure>';
     }).join('');
     gallery.insertAdjacentHTML('afterbegin',html);
     applyFilter(curFilter);
