@@ -342,7 +342,7 @@ function showHome() {
   B.dirty = false; $('#blogHome').hidden = false; $('#blogEd').hidden = true; window.scrollTo(0, 0);
   renderList();
   A.api('blogList').then(function (r) {
-    if (!r.ok) return toast(r.error || 'Could not load posts');
+    if (!r.ok) { if (r.error === 'Unknown action') return oldScript(); return toast(r.error || 'Could not load posts'); }
     B.posts = r.posts || []; B.github = r.github || {}; renderList();
   }).catch(function () {});
 }
@@ -652,14 +652,18 @@ function connect(e) {
   var btn = $('#ghSave'); btn.disabled = true;
   A.api('blogSetToken', { githubToken: tok }).then(function (r) {
     btn.disabled = false; $('#ghToken').value = '';
-    if (!r.ok) { $('#ghMsg').textContent = r.error; return; }
+    if (!r.ok) { if (r.error === 'Unknown action') return oldScript(); $('#ghMsg').textContent = r.error; return; }
     B.github = { connected: true }; $('#ghMsg').textContent = ''; renderList(); toast('Website connected. You can publish posts now.', 4000);
   }).catch(function () { btn.disabled = false; $('#ghMsg').textContent = 'Could not reach Google. Did you deploy the new Code.gs version?'; });
+}
+function oldScript() {
+  $('#postList').innerHTML = '<div class="empty"><p><b>One step left:</b> Your Google script is still the old version. In Apps Script: paste the new Code.gs, Save, run setupBlog once, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.</p></div>';
+  $('#ghCard').hidden = false; $('#ghMsg').textContent = 'Your Google script is still the old version. In Apps Script: paste the new Code.gs, Save, run setupBlog once, then Deploy → Manage deployments → ✏️ → Version: New version → Deploy.';
 }
 function checkConnection() {
   busy(true, 'Checking the website connection…');
   A.api('blogStatus').then(function (r) {
-    busy(false); B.github = { connected: !!r.connected }; renderList();
+    busy(false); if (!r.ok && r.error === 'Unknown action') return oldScript(); B.github = { connected: !!r.connected }; renderList();
     if (r.connected) toast('Connected to GitHub (' + r.repo + '). Publishing works.', 4000);
     else { $('#ghCard').hidden = false; $('#ghMsg').textContent = r.error || 'Not connected yet.'; $('#ghCard').scrollIntoView({ behavior: 'smooth' }); }
   }).catch(function () { busy(false); });
