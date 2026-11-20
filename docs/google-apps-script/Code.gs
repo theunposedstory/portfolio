@@ -8,6 +8,9 @@
  *                          addPayment, voidPayment)
  * 3) Website gallery    -> "Gallery" tab + Drive folder (action: galleryList, uploadImage,
  *                          updateImage, deleteImage; public GET ?action=gallery)
+ * 4) Website blog       -> "Blog" tab + commits pages to GitHub (action: blogList, blogGet,
+ *                          blogSave, blogPublish, blogUnpublish, blogDelete, blogCommit,
+ *                          blogUploadImage, blogStatus, blogSetToken). Run setupBlog() once.
  *
  * After pasting a new version: Deploy > Manage deployments > edit (pencil) >
  * Version: New version > Deploy. The web app URL stays the same.
@@ -65,7 +68,7 @@ function doPost(e) {
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.action === 'gallery') return json_(publicGallery_());     // public: website gallery
-  return json_({ ok: true, service: 'The Unposed Story enquiries + quotations + gallery' });
+  return json_({ ok: true, service: 'The Unposed Story enquiries + quotations + gallery + blog' });
 }
 
 /* ======================= 1) Website enquiries ======================= */
@@ -143,6 +146,16 @@ function handleAction_(d) {
     case 'uploadImage': auth_(d); return uploadImage_(d);
     case 'updateImage': auth_(d); return updateImage_(d);
     case 'deleteImage': auth_(d); return deleteImage_(d.id);
+    case 'blogList':      auth_(d); return blogList_();
+    case 'blogGet':       auth_(d); return blogGet_(d.id);
+    case 'blogSave':      auth_(d); return blogSave_(d.post || {});
+    case 'blogPublish':   auth_(d); return blogPublish_(d);
+    case 'blogUnpublish': auth_(d); return blogUnpublish_(d);
+    case 'blogDelete':    auth_(d); return blogDelete_(d.id);
+    case 'blogCommit':    auth_(d); return blogCommit_(d);
+    case 'blogUploadImage': auth_(d); return blogUploadImage_(d);
+    case 'blogStatus':    auth_(d); return blogStatus_();
+    case 'blogSetToken':  auth_(d); return blogSetToken_(d.githubToken);
     default: return { ok: false, error: 'Unknown action' };
   }
 }
@@ -529,8 +542,209 @@ function setupAndTest() {
 /** Run ONCE after pasting this version: creates the Gallery tab + Drive folder and asks for Drive permission. */
 function setupGallery() { getGallerySheet_(); galleryFolder_(); }
 
+/** Run ONCE after pasting the blog version: creates the Blog tab and asks permission to connect to GitHub. */
+function setupBlog() { getBlogSheet_(); try { UrlFetchApp.fetch('https://api.github.com/zen', { muteHttpExceptions: true }); } catch (x) {} }
+
 /** Run from the editor if you forget your quotation PIN (the next PIN you enter becomes the new one). */
 function resetQuotePin() { PropertiesService.getScriptProperties().deleteProperty('QUOTE_PIN_HASH'); }
+
+/* ======================= 4) Website blog =======================
+ * Posts are written in the builder's Blog tab. Drafts live in the "Blog" sheet tab.
+ * Publishing commits ready-made static pages (rendered in the builder) to the website's
+ * GitHub repo; Cloudflare redeploys the site automatically within about a minute.
+ * The GitHub token (fine-grained, Contents read/write on this one repo) is kept in
+ * Script Properties and never sent back to the browser.
+ */
+var BLOG_SHEET = 'Blog';
+var BLOG_HEADERS = ['Post ID', 'Status', 'Title', 'Slug', 'Category', 'Focus keyword', 'Words', 'SEO score',
+  'Created', 'Updated', 'Published', 'Live URL', 'Data 1 (do not edit)', 'Data 2', 'Data 3', 'Data 4'];
+var BLOG_DATA_COL = 13, BLOG_CHUNK = 45000;
+var GH_OWNER = 'theunposedstory', GH_REPO = 'portfolio', GH_BRANCH = 'main';
+var SITE_URL = 'https://portfolio.theunposedstory.workers.dev/';
+var INDEXNOW_KEY = '9f285e4e9c18895cff6314f099e69e13';
+var BLOG_PATH_OK = /^(blog\/(index\.html|sitemap\.xml|feed\.xml|[a-z0-9][a-z0-9-]{0,79}\/index\.html)|assets\/blog\/[a-z0-9][a-z0-9-]{0,90}\.(webp|jpg))$/;
+
+function getBlogSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BLOG_SHEET) || ss.insertSheet(BLOG_SHEET);
+  if (sh.getLastRow() === 0) {
+    headerRow_(sh, BLOG_HEADERS, [120, 90, 320, 220, 130, 170, 70, 80, 140, 140, 140, 260, 160, 80, 80, 80]);
+    sh.getRange('I:K').setNumberFormat('dd mmm yyyy, h:mm am/pm');
+    statusColours_(sh, 2, ['Draft', 'Published'], { Draft: '#EFE6D8', Published: '#D9E4C8' });
+  }
+  return sh;
+}
+function blogRows_() {
+  var sh = getBlogSheet_();
+  if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, BLOG_HEADERS.length).getValues().map(function (r, i) {
+    var raw = r.slice(BLOG_DATA_COL - 1).map(function (c) { return String(c || '').replace(/^~/, ''); }).join('');
+    var p = {}; try { p = JSON.parse(raw || '{}'); } catch (x) { p = {}; }
+    p.id = String(r[0]); p.status = String(r[1] || 'Draft');
+    return { row: i + 2, post: p };
+  }).filter(function (x) { return x.post.id; });
+}
+function blogMeta_(p) {
+  var m = {}; Object.keys(p).forEach(function (k) { if (k !== 'html' && k !== 'faqs' && k !== 'answer') m[k] = p[k]; });
+  return m;
+}
+function blogList_() {
+  var props = PropertiesService.getScriptProperties();
+  var posts = blogRows_().map(function (x) { return blogMeta_(x.post); })
+    .sort(function (a, b) { return String(b.updated || '').localeCompare(String(a.updated || '')); });
+  return { ok: true, posts: posts, github: { connected: !!props.getProperty('GITHUB_TOKEN') } };
+}
+function blogGet_(id) {
+  var hit = blogRows_().filter(function (x) { return x.post.id === id; })[0];
+  return hit ? { ok: true, post: hit.post } : { ok: false, error: 'Post not found' };
+}
+function blogSlug_(s) {
+  return String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, '');
+}
+/* Writes one post (insert or update). status: keep current unless given. */
+function blogWrite_(p, status) {
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var rows = blogRows_(), now = new Date();
+    p.slug = blogSlug_(p.slug || p.title);
+    if (!p.title || !p.slug) return { ok: false, error: 'Add a title first' };
+    if (rows.some(function (x) { return x.post.id !== p.id && (x.post.slug === p.slug || x.post.liveSlug === p.slug); }))
+      return { ok: false, error: 'Another post already uses the web address "' + p.slug + '". Change the slug.' };
+    var hit = p.id ? rows.filter(function (x) { return x.post.id === p.id; })[0] : null;
+    if (!hit) { p.id = 'B-' + Utilities.formatDate(now, TIMEZONE, 'yyMMdd') + '-' + Utilities.getUuid().slice(0, 4); p.created = now.toISOString(); }
+    else { p.created = hit.post.created || now.toISOString(); if (!('liveSlug' in p)) p.liveSlug = hit.post.liveSlug || ''; if (!p.published) p.published = hit.post.published || ''; }
+    p.status = status || (hit ? hit.post.status : 'Draft');
+    p.updated = now.toISOString();
+    var data = JSON.stringify(p);
+    if (data.length > BLOG_CHUNK * 4) return { ok: false, error: 'This post is too long to save (max about 25,000 words).' };
+    var chunks = []; for (var i = 0; i < 4; i++) { var c = data.slice(i * BLOG_CHUNK, (i + 1) * BLOG_CHUNK); chunks.push(c ? '~' + c : ''); }
+    var row = [p.id, p.status, clean_(p.title, 300), p.slug, clean_(p.category, 80), clean_(p.keyword, 120), num_(p.words), num_(p.score),
+      new Date(p.created), now, p.published ? new Date(p.published) : '', p.status === 'Published' ? SITE_URL + 'blog/' + p.slug + '/' : ''].concat(chunks);
+    var sh = getBlogSheet_();
+    if (hit) sh.getRange(hit.row, 1, 1, row.length).setValues([row]);
+    else sh.appendRow(row);
+    return { ok: true, post: p };
+  } finally { lock.releaseLock(); }
+}
+function blogSave_(p) {
+  var r = blogWrite_(p);
+  return r.ok ? { ok: true, post: blogMeta_(r.post) } : r;
+}
+/* Publish = commit the rendered pages to GitHub, then mark the post Published. */
+function blogPublish_(d) {
+  var p = d.post || {};
+  if (!p.title) return { ok: false, error: 'Add a title first' };
+  var slug = blogSlug_(p.slug || p.title);
+  var files = d.files || [];
+  if (!files.some(function (f) { return f.path === 'blog/' + slug + '/index.html'; })) return { ok: false, error: 'Post page missing' };
+  var sha = ghCommit_(files, d.remove || [], (p.liveSlug ? 'Blog: update "' : 'Blog: publish "') + String(p.title).slice(0, 80) + '"');
+  p.published = p.published || new Date().toISOString();
+  p.liveSlug = slug;
+  var r = blogWrite_(p, 'Published');
+  if (!r.ok) return r;
+  indexNow_([SITE_URL + 'blog/' + slug + '/', SITE_URL + 'blog/']);
+  return { ok: true, post: blogMeta_(r.post), commit: sha, url: SITE_URL + 'blog/' + slug + '/' };
+}
+function blogUnpublish_(d) {
+  var hit = blogRows_().filter(function (x) { return x.post.id === d.id; })[0];
+  if (!hit) return { ok: false, error: 'Post not found' };
+  var p = hit.post, live = p.liveSlug || p.slug;
+  ghCommit_(d.files || [], ['blog/' + live + '/index.html'].concat(d.remove || []), 'Blog: unpublish "' + String(p.title).slice(0, 80) + '"');
+  p.liveSlug = '';
+  var r = blogWrite_(p, 'Draft');
+  indexNow_([SITE_URL + 'blog/' + live + '/', SITE_URL + 'blog/']);
+  return r.ok ? { ok: true, post: blogMeta_(r.post) } : r;
+}
+function blogDelete_(id) {
+  var hit = blogRows_().filter(function (x) { return x.post.id === id; })[0];
+  if (!hit) return { ok: false, error: 'Post not found' };
+  if (hit.post.status === 'Published') return { ok: false, error: 'Unpublish this post before deleting it.' };
+  getBlogSheet_().deleteRow(hit.row);
+  return { ok: true };
+}
+/* Rebuild: commit several ready-made blog files at once (after a design change). */
+function blogCommit_(d) {
+  var sha = ghCommit_(d.files || [], d.remove || [], String(d.message || 'Blog: rebuild pages').slice(0, 120));
+  return { ok: true, commit: sha };
+}
+function blogUploadImage_(d) {
+  var files = (d.images || []).map(function (im) {
+    var bytes = Utilities.base64Decode(String(im.data || ''));
+    if (!bytes.length || bytes.length > 6 * 1024 * 1024) throw new Error('Image too large (max 6 MB after resizing)');
+    return { path: 'assets/blog/' + String(im.name || ''), base64: String(im.data) };
+  });
+  if (!files.length) return { ok: false, error: 'No image received' };
+  ghCommit_(files, [], 'Blog image: ' + files[0].path.split('/').pop());
+  return { ok: true, paths: files.map(function (f) { return '/' + f.path; }) };
+}
+function blogStatus_() {
+  var props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('GITHUB_TOKEN')) return { ok: true, connected: false };
+  try { var ref = gh_('get', '/git/ref/heads/' + GH_BRANCH); return { ok: true, connected: true, repo: GH_OWNER + '/' + GH_REPO, head: ref.object.sha.slice(0, 7) }; }
+  catch (e) { return { ok: true, connected: false, error: String(e.message || e) }; }
+}
+function blogSetToken_(token) {
+  token = String(token || '').trim();
+  if (!token) { PropertiesService.getScriptProperties().deleteProperty('GITHUB_TOKEN'); return { ok: true, connected: false }; }
+  if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(token)) return { ok: false, error: 'That doesn’t look like a GitHub token (it starts with github_pat_).' };
+  try { gh_('get', '/git/ref/heads/' + GH_BRANCH, null, token); }
+  catch (e) { return { ok: false, error: 'GitHub didn’t accept this token for ' + GH_OWNER + '/' + GH_REPO + '. Check “Repository access” and “Contents: Read and write”. (' + e.message + ')' }; }
+  PropertiesService.getScriptProperties().setProperty('GITHUB_TOKEN', token);
+  return { ok: true, connected: true, repo: GH_OWNER + '/' + GH_REPO };
+}
+
+/* --- GitHub: commit several files in ONE commit (Git Data API) --- */
+function gh_(method, path, body, tokenOverride) {
+  var tok = tokenOverride || PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  if (!tok) throw new Error('GitHub is not connected yet. Open Blog → Connect website.');
+  var opt = { method: method, muteHttpExceptions: true, contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } };
+  if (body) opt.payload = JSON.stringify(body);
+  var res = UrlFetchApp.fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + path, opt);
+  var code = res.getResponseCode(), txt = res.getContentText(), j = {};
+  try { j = JSON.parse(txt || '{}'); } catch (x) {}
+  if (code >= 300) {
+    var msg = code === 401 ? 'GitHub token expired or revoked. Paste a new one in Blog → Connect website.' :
+              code === 403 || code === 404 ? 'GitHub token has no write access to ' + GH_OWNER + '/' + GH_REPO + ' (Contents: Read and write).' :
+              'GitHub error ' + code + ': ' + String(j.message || txt).slice(0, 160);
+    var err = new Error(msg); err.code = code; throw err;
+  }
+  return j;
+}
+function ghExists_(path) {
+  try { gh_('get', '/contents/' + path.split('/').map(encodeURIComponent).join('/') + '?ref=' + GH_BRANCH); return true; }
+  catch (e) { if (e.code === 404) return false; throw e; }
+}
+function ghCommit_(files, remove, message) {
+  files = files || []; remove = remove || [];
+  files.concat(remove.map(function (p) { return { path: p }; })).forEach(function (f) {
+    if (!BLOG_PATH_OK.test(String(f.path))) throw new Error('Not allowed to change ' + f.path);
+  });
+  var keep = {}; files.forEach(function (f) { keep[f.path] = 1; });
+  remove = remove.filter(function (p, i) { return !keep[p] && remove.indexOf(p) === i && ghExists_(p); });
+  var entries = files.map(function (f) {
+    if (f.base64) return { path: f.path, mode: '100644', type: 'blob', sha: gh_('post', '/git/blobs', { content: f.base64, encoding: 'base64' }).sha };
+    return { path: f.path, mode: '100644', type: 'blob', content: String(f.content || '') };
+  }).concat(remove.map(function (p) { return { path: p, mode: '100644', type: 'blob', sha: null }; }));
+  if (!entries.length) return '';
+  for (var attempt = 0; ; attempt++) {
+    var head = gh_('get', '/git/ref/heads/' + GH_BRANCH).object.sha;
+    var base = gh_('get', '/git/commits/' + head).tree.sha;
+    var tree = gh_('post', '/git/trees', { base_tree: base, tree: entries });
+    if (tree.sha === base) return head;                              // nothing changed
+    var commit = gh_('post', '/git/commits', { message: message, tree: tree.sha, parents: [head] });
+    try { gh_('patch', '/git/refs/heads/' + GH_BRANCH, { sha: commit.sha, force: false }); return commit.sha; }
+    catch (e) { if (e.code === 422 && attempt < 3) { Utilities.sleep(700 * (attempt + 1)); continue; } throw e; }
+  }
+}
+/* Tell Bing / Yandex (IndexNow) about new or changed pages. Google reads the sitemap. */
+function indexNow_(urls) {
+  try {
+    UrlFetchApp.fetch('https://api.indexnow.org/indexnow', { method: 'post', contentType: 'application/json; charset=utf-8', muteHttpExceptions: true,
+      payload: JSON.stringify({ host: SITE_URL.replace(/^https:\/\/|\/$/g, ''), key: INDEXNOW_KEY, keyLocation: SITE_URL + INDEXNOW_KEY + '.txt', urlList: urls }) });
+  } catch (x) {}
+}
 
 /* ======================= Helpers ======================= */
 

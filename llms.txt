@@ -20,3 +20,4 @@
 
 ## Main pages
 - [Home](https://portfolio.theunposedstory.workers.dev/): portfolio, collections, reviews, FAQ and enquiry form
+- [Blog](https://portfolio.theunposedstory.workers.dev/blog/): wedding photography tips, pre-wedding shoot ideas, Mumbai venues and real weddings by Sandip Lade (RSS: /blog/feed.xml)

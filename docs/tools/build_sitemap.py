@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Rebuild sitemap.xml (pages + their photos for Google Images).
+"""Rebuild sitemap-pages.xml (pages + their photos for Google Images) and sitemap.xml
+(a sitemap index pointing to sitemap-pages.xml and blog/sitemap.xml, which the Blog tab updates).
 
 Run from the repo root:  python3 docs/tools/build_sitemap.py
 Re-run after adding pages or changing photos.
@@ -36,5 +37,8 @@ for path, prio in PAGES:
     total += len(imgs[:30])
     print(f'{path or "/":28} {len(imgs[:30])} photos')
 out.append('</urlset>')
-(ROOT / 'sitemap.xml').write_text('\n'.join(out) + '\n')
-print('sitemap.xml written:', len(PAGES), 'pages,', total, 'photo entries')
+(ROOT / 'sitemap-pages.xml').write_text('\n'.join(out) + '\n')
+(ROOT / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    f'  <sitemap><loc>{BASE}sitemap-pages.xml</loc><lastmod>{today}</lastmod></sitemap>\n'
+    f'  <sitemap><loc>{BASE}blog/sitemap.xml</loc></sitemap>\n</sitemapindex>\n')
+print('sitemap-pages.xml written:', len(PAGES), 'pages,', total, 'photo entries')

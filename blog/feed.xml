@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+<title>The Unposed Story — Wedding Photography Blog</title>
+<link>https://portfolio.theunposedstory.workers.dev/blog/</link>
+<atom:link href="https://portfolio.theunposedstory.workers.dev/blog/feed.xml" rel="self" type="application/rss+xml"/>
+<description>Wedding photography tips, pre-wedding ideas and real weddings from Mumbai by Sandip Lade.</description>
+<language>en-in</language>
+</channel>
+</rss>

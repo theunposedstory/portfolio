@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=96680359">
+<link rel="stylesheet" href="app.css?v=b4db3d99">
 </head>
 <body>
 
@@ -39,6 +39,7 @@
       <nav class="tabs" aria-label="Sections">
         <a href="#dashboard" data-tab="dashboard">Dashboard</a>
         <a href="#gallery" data-tab="gallery">Gallery</a>
+        <a href="#blog" data-tab="blog">Blog</a>
         <a href="#new" data-tab="editor" class="tab-new">+ New quote</a>
       </nav>
       <div class="top-actions">
@@ -111,6 +112,141 @@
       <section class="panel">
         <div class="panel-head"><h3>On your website</h3><div class="chips" id="galChips"></div></div>
         <div id="galGrid" class="gal-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- BLOG -->
+  <main id="blog" class="view" hidden>
+    <div class="wrap">
+      <!-- list of posts -->
+      <section id="blogHome">
+        <div class="view-head">
+          <div><p class="eyebrow">Website</p><h2>Blog</h2></div>
+          <div class="vh-act"><a class="btn btn-line" href="../blog/" target="_blank" rel="noopener">View blog</a><a class="btn btn-dark" href="#blog/new">+ New post</a></div>
+        </div>
+
+        <section class="card gh-card" id="ghCard" hidden>
+          <h3><span>1</span> Connect your website (one-time, 3 minutes)</h3>
+          <p class="small">Publishing saves each post as a real web page on your site, which is what Google ranks best. For that, your Google script needs a key to your website’s GitHub folder:</p>
+          <ol class="small steps-list">
+            <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → New fine-grained token</a> (log in as <b>theunposedstory</b>).</li>
+            <li>Token name: <b>Website blog</b>. Expiration: the longest it offers.</li>
+            <li>Repository access: <b>Only select repositories</b> → <b>theunposedstory/portfolio</b>.</li>
+            <li>Permissions → Repository permissions → <b>Contents: Read and write</b>. Nothing else.</li>
+            <li>Generate token, copy it and paste it below. It’s stored only inside your Google script.</li>
+          </ol>
+          <form id="ghForm" class="gh-form">
+            <input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_…" aria-label="GitHub token">
+            <button class="btn btn-dark" id="ghSave">Connect</button>
+          </form>
+          <p class="small err" id="ghMsg"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h3>Your posts</h3><span class="muted" id="blogCount"></span></div>
+          <div id="postList" class="plist"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h3>Post ideas couples search for</h3><span class="muted">Tap one to start</span></div>
+          <div id="ideaList" class="ideas"></div>
+        </section>
+
+        <section class="card tips">
+          <h3>What makes a post rank on Google</h3>
+          <ul class="small">
+            <li><b>One topic, one keyword.</b> Write the post around a phrase couples really type, like “pre-wedding shoot locations in Mumbai”.</li>
+            <li><b>Answer first.</b> Fill “In short” with a 2–3 sentence answer. Google snippets and AI assistants (ChatGPT, Gemini) quote it.</li>
+            <li><b>Your own photos and experience.</b> Real venues, real couples (with permission), real tips: Google rewards first-hand experience.</li>
+            <li><b>Link to your services.</b> Every post should link to a service page or Packages, so readers become enquiries.</li>
+            <li><b>Post regularly.</b> One good post every 2 weeks beats ten rushed ones. Update older posts each season.</li>
+          </ul>
+        </section>
+        <p class="small muted blog-foot"><button type="button" class="linkbtn" id="ghCheck">Check website connection</button> · <button type="button" class="linkbtn" id="rebuildAll">Rebuild all live posts</button> (after a website design change)</p>
+      </section>
+
+      <!-- editor -->
+      <section id="blogEd" hidden>
+        <div class="view-head">
+          <div><p class="eyebrow" id="bStatusLine">New post</p><h2 id="bHead">New post</h2></div>
+          <a href="#blog" class="btn btn-line">&larr; All posts</a>
+        </div>
+        <div class="bl-grid">
+          <div class="bl-main">
+            <section class="card">
+              <label>Post title (shown as the H1 heading) *
+                <input id="bTitle" class="b-title" maxlength="120" placeholder="e.g. 12 Best Pre-Wedding Shoot Locations in Mumbai">
+              </label>
+              <div class="b-cover" id="bCoverBox" role="button" tabindex="0" aria-label="Choose cover photo"></div>
+              <label>Cover photo description (alt text) *
+                <input id="bCoverAlt" maxlength="160" placeholder="e.g. Couple walking on Juhu beach at sunset during a pre-wedding shoot">
+              </label>
+            </section>
+
+            <section class="card">
+              <label>In short <span class="hint">2–3 sentences that directly answer the title. Shown at the top; Google &amp; AI assistants quote it.</span>
+                <textarea id="bAnswer" rows="3" maxlength="600" placeholder="e.g. The best pre-wedding shoot locations in Mumbai are Marine Drive, Bandra Fort, Juhu Beach…"></textarea>
+              </label>
+            </section>
+
+            <section class="card ed-card">
+              <div class="rte-bar" id="rteBar" role="toolbar" aria-label="Formatting">
+                <button type="button" data-c="h2" title="Section heading (H2)">H2</button>
+                <button type="button" data-c="h3" title="Sub-heading (H3)">H3</button>
+                <button type="button" data-c="p" title="Normal text">¶</button>
+                <span class="sep"></span>
+                <button type="button" data-c="bold" title="Bold"><b>B</b></button>
+                <button type="button" data-c="italic" title="Italic"><i>I</i></button>
+                <button type="button" data-c="insertUnorderedList" title="Bullet list">• List</button>
+                <button type="button" data-c="insertOrderedList" title="Numbered list">1. List</button>
+                <button type="button" data-c="blockquote" title="Quote">“ ”</button>
+                <span class="sep"></span>
+                <button type="button" data-c="link" title="Add link">Link</button>
+                <button type="button" data-c="unlink" title="Remove link">Unlink</button>
+                <button type="button" data-c="photo" title="Add photo">+ Photo</button>
+                <button type="button" data-c="clear" title="Clear formatting">Clear</button>
+              </div>
+              <div class="link-pop" id="linkPop" hidden></div>
+              <div id="bBody" class="rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Post content" data-ph="Start writing… Use H2 for each section. You can paste from Google Docs or Word."></div>
+              <p class="small muted" id="bWords"></p>
+            </section>
+
+            <section class="card">
+              <h3 class="b-h">FAQs <span class="hint">2–5 questions couples really ask. Marked up for Google’s FAQ results.</span></h3>
+              <div id="bFaqs"></div>
+              <button type="button" class="btn btn-line btn-sm" id="bAddFaq">+ Add question</button>
+            </section>
+          </div>
+
+          <aside class="bl-side">
+            <section class="card pub-card">
+              <div class="pub-btns">
+                <button type="button" class="btn btn-dark" id="bPublish">Publish to website</button>
+                <button type="button" class="btn btn-line" id="bSave">Save draft</button>
+                <button type="button" class="btn btn-line" id="bPreviewBtn">Preview</button>
+              </div>
+              <p class="small" id="bLive"></p>
+              <p class="small muted pub-more"><button type="button" class="linkbtn" id="bUnpub" hidden>Unpublish</button><button type="button" class="linkbtn danger" id="bDelete" hidden>Delete draft</button></p>
+            </section>
+
+            <section class="card score-card">
+              <div class="score" id="bScoreBox"><b id="bScore">0</b><div><span>SEO score</span><small id="bScoreLbl"></small></div></div>
+              <ul id="bChecks" class="checks"></ul>
+            </section>
+
+            <section class="card seo-card">
+              <h3 class="b-h">Search settings</h3>
+              <label>Focus keyword <input id="bKeyword" maxlength="80" placeholder="e.g. pre-wedding shoot locations in Mumbai"></label>
+              <label>SEO title <span class="cnt" id="cTitle"></span><input id="bSeoTitle" maxlength="90"></label>
+              <label>Web address <span class="slug"><span>/blog/</span><input id="bSlug" maxlength="80" aria-label="Web address (slug)"></span></label>
+              <p class="small warn" id="bSlugWarn" hidden>You changed the address of a live post. The old address will forward to the new one.</p>
+              <label>Meta description <span class="cnt" id="cDesc"></span><textarea id="bDesc" rows="4" maxlength="200" placeholder="The text Google shows under your title. 120–160 characters, with the keyword and a reason to click."></textarea></label>
+              <label>Category <input id="bCat" list="bCats" maxlength="40" placeholder="Choose or type"><datalist id="bCats"></datalist></label>
+              <div class="serp" id="bSerp"></div>
+            </section>
+          </aside>
+        </div>
       </section>
     </div>
   </main>
@@ -293,11 +429,27 @@
   <div class="pv-scroll" id="pvScroll"><div class="pv-pages" id="pvPages"></div></div>
 </div>
 
+<!-- BLOG: preview + published dialog -->
+<div class="bpv" id="bPreview" hidden>
+  <div class="bpv-bar"><b>Preview</b><button type="button" data-w="390">Phone</button><button type="button" data-w="1280" class="on">Desktop</button><button type="button" class="x">Close preview</button></div>
+  <iframe id="bFrame" title="Post preview"></iframe>
+</div>
+<div class="pub-done" id="pubDone" hidden role="dialog" aria-modal="true" aria-labelledby="pubDoneH">
+  <div class="pub-box">
+    <h3 id="pubDoneH">Published 🎉</h3>
+    <p>Your post will be live in about a minute at:<br><a id="pubUrl" target="_blank" rel="noopener"></a></p>
+    <p class="small muted">Google usually finds new posts within days through your sitemap. To speed it up: Search Console → URL inspection → paste the link → Request indexing.</p>
+    <div class="pub-act"><a class="btn btn-wa" id="pubWa" target="_blank" rel="noopener">Share on WhatsApp</a><button type="button" class="btn btn-line" id="pubClose">Done</button></div>
+  </div>
+</div>
+
 <!-- PDF render area (off-screen) -->
 <div id="pdfHost" aria-hidden="true"></div>
 
 
 
-<script src="app.js?v=94145e36"></script>
+<script src="app.js?v=34fd5b06"></script>
+<script src="blog-chrome.js?v=de7deb15"></script>
+<script src="blog.js?v=af591828"></script>
 </body>
 </html>

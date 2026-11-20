@@ -176,15 +176,16 @@ function refreshData() {
 window.addEventListener('hashchange', function () { if (S.token || DEMO) route(); });
 function route() {
   var h = location.hash.replace('#', '');
-  $$('.tabs a').forEach(function (a) { a.classList.toggle('on', (h === '' || h === 'dashboard') ? a.dataset.tab === 'dashboard' : a.dataset.tab === h); });
+  $$('.tabs a').forEach(function (a) { a.classList.toggle('on', (h === '' || h === 'dashboard') ? a.dataset.tab === 'dashboard' : a.dataset.tab === h.split('/')[0]); });
   if (h === 'gallery') { showView('gallery'); return openGallery(); }
+  if (h === 'blog' || h.indexOf('blog/') === 0) { showView('blog'); if (window.TUSBlog) return window.TUSBlog.open(h); window.__blogPending = h; return; }
   if (h.indexOf('q/') === 0) return openQuote(decodeURIComponent(h.slice(2)));
   if (h.indexOf('enq/') === 0) return newQuote(decodeURIComponent(h.slice(4)));
   if (h === 'new') return newQuote();
   showView('dashboard'); renderDashboard();
 }
 function showView(v) {
-  $('#dashboard').hidden = v !== 'dashboard'; $('#editor').hidden = v !== 'editor'; $('#gallery').hidden = v !== 'gallery';
+  $('#dashboard').hidden = v !== 'dashboard'; $('#editor').hidden = v !== 'editor'; $('#gallery').hidden = v !== 'gallery'; $('#blog').hidden = v !== 'blog';
   window.scrollTo(0, 0);
 }
 window.addEventListener('beforeunload', function (e) { if (S.dirty) { e.preventDefault(); e.returnValue = ''; } });
@@ -1073,6 +1074,7 @@ var Demo = (function () {
     if (a === 'updateImage') { gal.forEach(function (x) { if (x.id === d.id) { if (d.section != null) x.section = d.section; if (d.alt != null) x.alt = d.alt; if (d.visible != null) x.visible = d.visible; } }); return { ok: true }; }
     if (a === 'deleteImage') { gal = gal.filter(function (x) { return x.id !== d.id; }); return { ok: true }; }
     if (a === 'voidPayment') { var s2 = store[d.id]; s2.payments.forEach(function (p) { if (p.receiptNo === d.receiptNo) p.status = 'Void'; }); return { ok: true, payments: clone(s2.payments) }; }
+    if (window.TUSBlog && /^blog/.test(a)) return window.TUSBlog.demo(a, d);
     return { ok: false, error: 'demo' };
   }
   return { call: call };
@@ -1086,6 +1088,9 @@ window.addEventListener('error', function () {
     $('#loginMsg').innerHTML = 'Something didn’t load properly. <a href="#" onclick="location.reload(true);return false">Reload the page</a>.';
   }
 });
+
+/* ---------------- shared with the Blog tab (blog.js) ---------------- */
+window.TUSApp = { $: $, $$: $$, esc: esc, toast: toast, busy: busy, api: api, DEMO: DEMO };
 
 /* ---------------- boot ---------------- */
 if (DEMO) { S.token = 'demo'; document.title = 'DEMO · ' + document.title; start(); }
