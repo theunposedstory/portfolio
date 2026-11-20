@@ -13,10 +13,10 @@
 - Booking: share wedding date and city on WhatsApp; reply within 24 hours; date reserved on receipt of the booking advance
 
 ## Services
-- [Wedding photography in Mumbai](https://theunposedstory.github.io/portfolio/wedding-photography/): candid + traditional photographers, 150–700 edited photos, albums in Gold and Platinum
-- [Pre-wedding shoots in Mumbai](https://theunposedstory.github.io/portfolio/pre-wedding-shoot/): beaches, heritage forts and golden-hour locations; included in Platinum or booked separately
-- [Cinematic wedding films](https://theunposedstory.github.io/portfolio/cinematic-wedding-films/): teaser (1–3 min), highlight film (10–25 min), full event video (1–3 hrs), Instagram reels, drone coverage
-- [Haldi, mehendi & bridal photography](https://theunposedstory.github.io/portfolio/haldi-bridal-photography/): candid ritual coverage and relaxed bridal portraits
+- [Wedding photography in Mumbai](https://portfolio.theunposedstory.workers.dev/wedding-photography/): candid + traditional photographers, 150–700 edited photos, albums in Gold and Platinum
+- [Pre-wedding shoots in Mumbai](https://portfolio.theunposedstory.workers.dev/pre-wedding-shoot/): beaches, heritage forts and golden-hour locations; included in Platinum or booked separately
+- [Cinematic wedding films](https://portfolio.theunposedstory.workers.dev/cinematic-wedding-films/): teaser (1–3 min), highlight film (10–25 min), full event video (1–3 hrs), Instagram reels, drone coverage
+- [Haldi, mehendi & bridal photography](https://portfolio.theunposedstory.workers.dev/haldi-bridal-photography/): candid ritual coverage and relaxed bridal portraits
 
 ## Main pages
-- [Home](https://theunposedstory.github.io/portfolio/): portfolio, collections, reviews, FAQ and enquiry form
+- [Home](https://portfolio.theunposedstory.workers.dev/): portfolio, collections, reviews, FAQ and enquiry form

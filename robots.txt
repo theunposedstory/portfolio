@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /portfolio/quote/
+Disallow: /quote/
+Disallow: /docs/
 
-Sitemap: https://theunposedstory.github.io/portfolio/sitemap.xml
+Sitemap: https://portfolio.theunposedstory.workers.dev/sitemap.xml

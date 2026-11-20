@@ -1,0 +1,6 @@
+# Files in the repo that should not be published on the website
+CLAUDE.md
+docs
+_headers
+.nojekyll
+*.py

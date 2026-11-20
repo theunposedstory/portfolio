@@ -7,7 +7,7 @@ Re-run after adding pages or changing photos.
 import datetime, html, pathlib, re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BASE = 'https://theunposedstory.github.io/portfolio/'
+BASE = 'https://portfolio.theunposedstory.workers.dev/'
 PAGES = [('', '1.0'), ('wedding-photography/', '0.8'), ('pre-wedding-shoot/', '0.8'),
          ('cinematic-wedding-films/', '0.8'), ('haldi-bridal-photography/', '0.8')]
 SKIP = re.compile(r'(logo|favicon|icon-|apple-touch)', re.I)

@@ -1,0 +1,14 @@
+# Cloudflare static-asset headers. CSS/JS are versioned with ?v= (docs/tools/stamp_assets.py),
+# so they can be cached for a year. When you REPLACE an image, give it a NEW file name.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/quote/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/quote/*
+  X-Robots-Tag: noindex, nofollow

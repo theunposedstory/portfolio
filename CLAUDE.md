@@ -104,15 +104,24 @@ Open business point: drone add-on (₹5K) undercuts Gold — suggested ~₹12K.
 - Gallery photos open via an injected `<button class="g-open">` (no role=button on <figure>).
 - Contrast: --muted #675D53, --gold-d #6B5626 (AA on ivory/sand). Footer headings are h3.ftr-h.
 - `llms.txt` at the site root folder: plain-language business summary for AI assistants. Keep facts in
-  sync with prices/services. (Lighthouse checks llms.txt at the domain root, which on github.io is
-  outside this repo; it will count once the site moves to its own domain.)
+  sync with prices/services. (Now served at the domain root on workers.dev.)
 
 ## Hosting / deploy
-- GitHub Pages from `main` of `theunposedstory/portfolio`
-  → https://theunposedstory.github.io/portfolio/
-- Previous (pre-redesign) site: commit `9a93f4f`.
-- Moving to a custom domain: replace `https://theunposedstory.github.io/portfolio/`
-  in `index.html`, `robots.txt`, `sitemap.xml`.
+- **Live address (Nov 2026): https://portfolio.theunposedstory.workers.dev/** — Cloudflare Worker
+  (static assets) connected to GitHub `theunposedstory/portfolio`, branch `main`; every push redeploys.
+- `_headers`: 1-year cache for /assets/* and /quote/vendor/*, noindex for /quote/*. `.assetsignore`
+  keeps CLAUDE.md, docs/ and *.py off the website. **When replacing an image, use a new file name.**
+- CSS/JS cache-busting: run `python3 docs/tools/stamp_assets.py` after editing site.css/site.js or
+  quote app.css/app.js (adds ?v=<hash> in every page).
+- Old GitHub Pages address (theunposedstory.github.io/portfolio) still builds from the same repo; every
+  page has a tiny script that forwards visitors to the same path on workers.dev, and all canonicals
+  point to workers.dev.
+- Build order after content changes: build_service_pages.py → stamp_assets.py → build_sitemap.py.
+- Search Console: verification file google2df9b6543f22f71c.html at the root (works for any property
+  of the same Google account). Previous (pre-redesign) site: commit `9a93f4f`.
+- Moving to an own domain later: replace `https://portfolio.theunposedstory.workers.dev/` everywhere
+  (same files as this move: pages, generators, llms.txt, robots.txt, sitemap, quote/app.js BRAND.web)
+  and update the forwarding script.
 
 ## Not done yet (agreed next steps)
 1. Multi-page build: service pages DONE (Nov 2026). Still to do: location pages

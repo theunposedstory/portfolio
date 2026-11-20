@@ -7,7 +7,7 @@ Pages are written to <slug>/index.html. Re-run after changing the header, footer
 import html, json, re, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BASE = 'https://theunposedstory.github.io/portfolio/'
+BASE = 'https://portfolio.theunposedstory.workers.dev/'
 WA = '917045278377'
 home = (ROOT / 'index.html').read_text()
 
@@ -138,6 +138,7 @@ def page(p):
 <html lang="en-IN">
 <head>
 <meta charset="utf-8">
+<script>if(location.hostname==='theunposedstory.github.io'){{location.replace('https://portfolio.theunposedstory.workers.dev'+location.pathname.replace(/^\\/portfolio/,'')+location.search+location.hash)}}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{esc(p['title'])}</title>
 <meta name="description" content="{esc(p['desc'])}">
