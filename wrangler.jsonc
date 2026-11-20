@@ -1,0 +1,11 @@
+// Cloudflare Worker that serves this repository as a static website.
+// Live at https://portfolio.theunposedstory.workers.dev/  (see CLAUDE.md → Hosting / deploy)
+{
+  "name": "portfolio",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": ".",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  }
+}
