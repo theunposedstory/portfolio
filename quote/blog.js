@@ -146,7 +146,7 @@ function head(o) {
       (o.article.section ? '<meta property="article:section" content="' + escA(o.article.section) + '">' : '') + '\n' : '') +
     '<meta name="twitter:card" content="summary_large_image">\n' +
     '<link rel="alternate" type="application/rss+xml" title="The Unposed Story — Blog" href="' + BASE + 'blog/feed.xml">\n' +
-    '<link rel="icon" href="' + R + 'assets/img/favicon-48.png" sizes="48x48" type="image/png"><link rel="apple-touch-icon" href="' + R + 'assets/img/apple-touch-icon.png">\n' +
+    '<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="' + R + 'assets/img/favicon-192.png" sizes="192x192" type="image/png"><link rel="icon" href="' + R + 'assets/img/favicon-48.png" sizes="48x48" type="image/png"><link rel="apple-touch-icon" href="' + R + 'assets/img/apple-touch-icon.png">\n' +
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
     '<link rel="preload" as="style" href="' + C.fonts + '" onload="this.onload=null;this.rel=\'stylesheet\'"><noscript><link rel="stylesheet" href="' + C.fonts + '"></noscript>\n' +
     (o.preload || '') +

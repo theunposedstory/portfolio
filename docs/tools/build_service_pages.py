@@ -152,7 +152,7 @@ def page(p):
 <meta property="og:type" content="website"><meta property="og:site_name" content="The Unposed Story"><meta property="og:locale" content="en_IN">
 <meta property="og:title" content="{esc(p['title'])}"><meta property="og:description" content="{esc(p['desc'])}">
 <meta property="og:url" content="{url}"><meta property="og:image" content="{BASE}assets/img/{img}.webp"><meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="../assets/img/favicon-48.png" sizes="48x48" type="image/png"><link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="../assets/img/favicon-192.png" sizes="192x192" type="image/png"><link rel="icon" href="../assets/img/favicon-48.png" sizes="48x48" type="image/png"><link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="{fonts}" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="{fonts}"></noscript>
 <link rel="preload" as="image" href="../assets/img/{img}.webp" fetchpriority="high">
